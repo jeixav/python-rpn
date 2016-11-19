@@ -27,7 +27,6 @@ Makefile
 Makefile.build*
 Makefile.rules*
 Makefile.dep*
-lib/rpnpy/version.py
 build-*
 include/rpnpy_version.*
 .setenv.__extlib__.*.dot
