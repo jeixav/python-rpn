@@ -2670,14 +2670,14 @@ def DecodeIp(ip1, ip2, ip3):
     # Level v1=1500.0, v2=1500.0, type= m
 
     See Also:
-        EncodeIp
-        ip1_val
-        ip2_val
-        ip3_val
-        convertIp
-        convertIPtoPK
-        convertPKtoIP
-        kindToString
+        `EncodeIp`
+        `ip1_val`
+        `ip2_val`
+        `ip3_val`
+        `convertIp`
+        `convertIPtoPK`
+        `convertPKtoIP`
+        `kindToString`
         rpnpy.librmn.const
     """
     (rp1, rp2, rp3) = (_rp.FLOAT_IP(0., 0., 0), _rp.FLOAT_IP(0., 0., 0),
