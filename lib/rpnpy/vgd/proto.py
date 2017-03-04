@@ -13,20 +13,30 @@ Module vgd is a ctypes import of vgrid's library (libdescrip.so)
 The vgd.proto python module includes ctypes prototypes for many
 vgrid's libdescrip C functions.
 
-The functions in this module are actual C funtions and must thus be called
-as such with appropriate argument typing and dereferencing.
-It is highly advised in a python program to prefer the use of the python wrapper
-found in rpnpy.vgd.base
+Warning:
+    Please use with caution.
+    The functions in this module are actual C funtions and must thus be called
+    as such with appropriate argument typing and dereferencing.
+    It is highly advised in a python program to prefer the use of the
+    python wrapper found in
+    * rpnpy.vgd.base
+
+Notes:
+    The functions described below are a very close ''port'' from the original
+    [[Vgrid]] package.<br>
+    You may want to refer to the [[Vgrid]] documentation for more details.
 
 See Also:
     rpnpy.vgd.base
     rpnpy.vgd.const
 
-Notes:
-    This Module is available from python-rpn version 2.0.b6
+Details:
+    See Source Code
 
- === Functions C Prototypes ===
+##DETAILS_START
+== Functions C Prototypes ==
 
+<source lang="python">
  c_vgd_construct():
     Returns a NOT fully initialized VGridDescriptor instance
     Proto:
@@ -358,7 +368,8 @@ Notes:
 
     Returns:
        int : Status VGD_OK or VGD_ERROR 
-
+</source>
+##DETAILS_END
 """
  ## c_vgd_print_desc(self, sout, convip):
  ##    Print informations on vgrid descriptor
@@ -424,6 +435,8 @@ class VGridDescriptor(_ct.Structure):
 
     See Also:
        c_vgd_construct
+       rpnpy.vgd.base.vgd_get
+       rpnpy.vgd.base.vgd_put
     """
     _fields_ = [
         ("dummy", _ct.c_int),

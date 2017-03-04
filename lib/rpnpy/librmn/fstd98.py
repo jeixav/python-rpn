@@ -8,6 +8,18 @@
 """
 Module librmn.fstd98 contains python wrapper to main librmn's fstd98,
 convip C functions along with helper functions
+
+Notes:
+    The functions described below are a very close ''port'' from the original
+    [[librmn]]'s [[Librmn/FSTDfunctions|FSTD]] package.<br>
+    You may want to refer to the [[Librmn/FSTDfunctions|FSTD]]
+    documentation for more details.
+
+See Also:
+    rpnpy.librmn.base
+    rpnpy.librmn.interp
+    rpnpy.librmn.grids
+    rpnpy.librmn.const
 """
 
 import os
@@ -40,11 +52,18 @@ class FSTDError(RMNError):
 
     >>> import rpnpy.librmn.all as rmn
     >>> try:
-    >>>    #... an fst98 operation ...
-    >>> except(rmn.FSTDError):
-    >>>    pass #ignore the error
+    ...    pass #... an fst98 operation ...
+    ... except(rmn.FSTDError):
+    ...    pass #ignore the error
     >>> #...
     >>> raise rmn.FSTDError()
+    Traceback (most recent call last):
+      File "/usr/lib/python2.7/doctest.py", line 1289, in __run
+        compileflags, 1) in test.globs
+      File "<doctest __main__.FSTDError[2]>", line 1, in <module>
+        raise rmn.FSTDError()
+    FSTDError
+
 
     See Also:
        rpnpy.librmn.RMNError
@@ -290,14 +309,14 @@ def fstopenall(paths, filemode=_rc.FST_RO, verbose=None):
     return fstlnk(iunitlist)
 
 
-def fstcloseall(iunit):
+def fstcloseall(iunit, verbose=None):
     """
     Close all files associated with provided file unit number.
     Shortcut for fclos+fstfrm
 
     Args:
-        iunit    : unit number associated to the file
-                   obtained with fnom or fstopenall
+        iunit    : unit number(s) associated to the file
+                   obtained with fnom or fstopenall (int or list of int)
     Returns:
         None
     Raises:
@@ -320,7 +339,20 @@ def fstcloseall(iunit):
        rpnpy.librmn.const
        FSTDError
     """
-    if not (type(iunit) == int):
+    if isinstance(iunit, (list, tuple)):
+        istat = 0
+        elist = []
+        for i in iunit:
+            try:
+                fstcloseall(i, verbose=verbose)
+            except Exception as e:
+                elist.append(e)
+                istat = -1
+        if istat >= 0:
+            return
+        raise FSTDError("fstcloseall: Unable to properly close units {0} ({1})".format(repr(iunit), repr(elist)))
+        
+    if not isinstance(iunit, int):
         raise TypeError("fstcloseall: Expecting arg of type int, Got {0}"\
                         .format(type(iunit)))
     if iunit < 0:
@@ -332,13 +364,17 @@ def fstcloseall(iunit):
         iunitlist = (iunit,)
     istat = 0
     elist = []
-    for iunit in iunitlist:
+    for iunit1 in iunitlist:
         try:
-            fstfrm(iunit)
-            istat =_rb.fclos(iunit)
+            fstfrm(iunit1)
+            istat =_rb.fclos(iunit1)
+            if verbose:
+                print("(fstcloseall) Closing: {0}".format(iunit1))
         except Exception as e:
             elist.append(e)
             istat = -1
+            if verbose:
+                print("(fstcloseall) Problem Closing: {0}".format(iunit1))
     try:
         del _linkedUnits[str(iunitlist[0])]
     except:
@@ -447,7 +483,6 @@ def fstecr(iunit, data, meta=None, rewrite=True):
         rec   : data + meta in a dict
                 Option to provide data+meta in a single dict
                 where data = rec['d']
-                Note: new option in version 2.0.rc1
         rewrite : force to overwrite any other fields with same meta 
     Returns:
         None
@@ -638,7 +673,7 @@ def fst_edit_dir(key, datev=-1, dateo=-1, deet=-1, npas=-1, ni=-1, nj=-1, nk=-1,
     Notes:
         librmn_15.2 fst_edit_dir ignores ni,nj,nk,grtyp
         These parameters cannot thus be zapped.
-        librmn_16 will allow the edition of grtyp
+        librmn_16 allows the edition of grtyp
     """
     if datev != -1:
         if dateo != -1:
@@ -1134,9 +1169,9 @@ def fstlir(iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
     >>> 
     >>> # Find and read p0 meta and data, then print its min,max,mean values
     >>> p0rec = rmn.fstlir(funit, nomvar='P0')
-    >>> print("# P0 ip2={0} min={1} max={2} avg={3}"\
-              .format(p0rec['ip2'], p0rec['d'].min(), p0rec['d'].max(), p0rec['d'].mean()))
-    # P0 ip2=0 min=530.641418 max=1039.641479 avg=966.500000
+    >>> print("# P0 ip2={0} min={1:7.3f} max={2:7.2f} avg={3:5.1f}"\
+              .format(p0rec['ip2'], float(p0rec['d'].min()), float(p0rec['d'].max()), float(p0rec['d'].mean())))
+    # P0 ip2=0 min=530.641 max=1039.64 avg=966.5
     >>> rmn.fstcloseall(funit)
     
     See Also:
@@ -1207,9 +1242,9 @@ def fstlirx(key, iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
     >>> # then print its min,max,mean values
     >>> key1  = rmn.fstinf(funit, nomvar='P0')
     >>> p0rec = rmn.fstlirx(key1, funit, nomvar='P0')
-    >>> print("# P0 ip2={0} min={1} max={2} avg={3}"\
-              .format(p0rec['ip2'], p0rec['d'].min(), p0rec['d'].max(), p0rec['d'].mean()))
-    # P0 ip2=12 min=530.958008 max=1037.958008 avg=966.373600
+    >>> print("# P0 ip2={0} min={1:7.3f} max={2:7.2f} avg={3:8.4f}"\
+              .format(p0rec['ip2'], float(p0rec['d'].min()), float(p0rec['d'].max()), float(p0rec['d'].mean())))
+    # P0 ip2=12 min=530.958 max=1037.96 avg=966.3736
     >>> rmn.fstcloseall(funit)
     
     See Also:
@@ -1268,9 +1303,9 @@ def fstlis(iunit, dtype=None, rank=None, dataArray=None):
     >>> # then print its min,max,mean values
     >>> key1  = rmn.fstinf(funit, nomvar='P0')
     >>> p0rec = rmn.fstlis(funit)
-    >>> print("# P0 ip2={0} min={1} max={2} avg={3}"\
-              .format(p0rec['ip2'], p0rec['d'].min(), p0rec['d'].max(), p0rec['d'].mean()))
-    # P0 ip2=12 min=530.958008 max=1037.958008 avg=966.373600
+    >>> print("# P0 ip2={0} min={1:7.3f} max={2:7.2f} avg={3:8.4f}"\
+              .format(p0rec['ip2'], float(p0rec['d'].min()), float(p0rec['d'].max()), float(p0rec['d'].mean())))
+    # P0 ip2=12 min=530.958 max=1037.96 avg=966.3736
     >>>    
     >>> rmn.fstcloseall(funit)
     

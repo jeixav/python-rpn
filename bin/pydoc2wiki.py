@@ -11,28 +11,35 @@ import sys
 import re
 import pydoc
 import inspect
+import pprint
+pp = pprint.PrettyPrinter(indent=4)
 
-topnotes="""
-{{roundbox|
-The functions described below are a very close ''port'' from the original [[librmn]]'s [[Librmn/FSTDfunctions|FSTD]] and [[Vgrid]] packages.<br>
-You may want to refer to the [[Librmn/FSTDfunctions|FSTD]] and [[Vgrid]] documentation for more details.
-}}
-"""
-
+## topnotes="""
+## {{roundbox|
+## The functions described below are a very close ''port'' from the original [[librmn]]'s [[Librmn/FSTDfunctions|FSTD]] and [[Vgrid]] packages.<br>
+## You may want to refer to the [[Librmn/FSTDfunctions|FSTD]] and [[Vgrid]] documentation for more details.
+## }}
+## """
+topnotes=""
+linkPrefix = 'Python-RPN/2.1/'
 tmpl = {}
 tmpl['head'] = """
 __NOTITLE__ 
 = Python RPN: @MODULE@ =
-{{:Python-RPN/2.0/navbox}}
+{{:Python-RPN/2.1/navbox}}
 {| style='background-color:white; border: 0px #fff solid; width=82%;'>
 |-
 |
 @DESC@
-{{roundbox|
-The functions described below are a very close ''port'' from the original [[librmn]]'s [[Librmn/FSTDfunctions|FSTD]] and [[Vgrid]] packages.<br>
-You may want to refer to the [[Librmn/FSTDfunctions|FSTD]] and [[Vgrid]] documentation for more details.
-}}
+@NOTES@
+@EXAMPLE@
+@SEEALSO@
 __TOC__
+|}
+{| style='background-color:white; border: 0px #fff solid; width=82%;'>
+|-
+|
+@DETAILS@
 @CLASS@
 @FUNC@
 @DATA@
@@ -120,12 +127,34 @@ Child of: @SUPER@
 @METH@
 """
 
+def get_warning(mystr):
+    if not mystr.strip():
+        return ''
+    mystrlist = mystr.strip().split('\n')
+    s = '{{warning|\n'
+    s += mystrlist[0]+'\n'
+    if len(mystrlist) > 1:
+        s += '\n'.join(do_undent(mystrlist[1:]))
+    s += '\n}}\n'
+    return s
+
+def get_notes(mystr):
+    if not mystr.strip():
+        return ''
+    mystrlist = mystr.strip().split('\n')
+    s = '{{roundboxtop}}\n'
+    s += mystrlist[0]+'\n'
+    if len(mystrlist) > 1:
+        s += '\n'.join(do_undent(mystrlist[1:]))
+    s += '\n{{roundboxbot}}\n'
+    return s
+
 def get_example(mystr):
     if not mystr.strip():
         return ''
     s = 'Examples:\n'
     s += '<source lang="python">\n'
-    s += mystr.strip().replace('>>> ','').replace('>>>','')
+    s += mystr.strip().replace('\n','\n#').replace('\n#... ','\n').replace('\n#...','\n').replace('\n#>>> ','\n').replace('\n#>>>','\n').replace('>>> ','').replace('>>>','').replace('\n##','\n#')
     s += '</source>\n'
     return s
 
@@ -217,7 +246,9 @@ class MyDocFileDataDesc(dict):
         self.sections = {
             'seealso'  : 'See Also',
             'example'  : 'Examples:',
-            'notes'    : 'Notes:'
+            'notes'    : 'Notes:',
+            'warning'  : 'Warning:',
+            'details'  : 'Details:',
             }
         self[''] = mystr
         self['short'] = mystr.strip()
@@ -259,7 +290,8 @@ class MyDocFileDict(dict):
 
     def __repr__(self):
         mystr = self.__class__.__name__ + '(' 
-        mystr += repr(super(self.__class__, self))
+        ## mystr += repr(super(self.__class__, self))
+        mystr += dict.__repr__(dict(self))
         mystr += ')'
         return mystr
     
@@ -315,16 +347,15 @@ class MyDocFileClassDict(MyDocFileDict):
         for x in self.keys():
             l += self[x].symbols()
         return l
-            
 
 class MyDocFileObj(dict):
 
     def __repr__(self):
         mystr = self.__class__.__name__ + '('
-        mystr += dict.__repr__(self)
+        mystr += dict.__repr__(dict(self))
         mystr += ')'
         return mystr
-
+    
     def toWiki(self, allSymbols=[], inClass=False):
         return repr(self)+'<br>\n'
 
@@ -373,7 +404,7 @@ class MyDocFileFunction(MyDocFileObj):
             .replace('@DESC@', do_indent(self['desc'].toWiki(allSymbols).strip()))\
             .replace('@SHORT@', self['desc']['short'].strip())\
             .replace('@EXAMPLE@', get_example(self['desc']['example']))\
-            .replace('@NOTES@', self['desc']['notes'])\
+            .replace('@NOTES@', get_warning(self['desc']['warning']) + get_notes(self['desc']['notes']))\
             .replace('@SEEALSO@', get_seealso(self['desc']['seealso'], allSymbols))
         ## return "%s(%s)\n%s\n" % (self['name'], self['args'], self['desc'].toWiki(allSymbols))
 
@@ -426,7 +457,7 @@ class MyDocFileClass(MyDocFileObj):
             .replace('@SHORT@', self['desc']['short'].strip())\
             .replace('@NAME@', self['name'])\
             .replace('@EXAMPLE@', get_example(self['desc']['example']))\
-            .replace('@NOTES@', self['desc']['notes'])\
+            .replace('@NOTES@', get_warning(self['desc']['warning']) + get_notes(self['desc']['notes']))\
             .replace('@SEEALSO@', get_seealso(self['desc']['seealso'], allSymbols))
 
     def symbols(self):
@@ -466,25 +497,57 @@ class MyDocFile(MyDocFileObj):
             self['name1'] = x[0].strip()
             self['desc'] = MyDocFileDataDesc(x[1].strip())
         self['desc'] = MyDocFileDataDesc(self['synmols'].__doc__)
-        ## print name, repr(self['synmols'].__doc__)
         self['file'] = d['FILE'][0].strip()
 
     def toWiki(self, allSymbols=[]):
         d = {
             '@MODULE@': self['name'],
-            '@DESC@':'', '@CLASS@':'', '@FUNC@':'', '@DATA@':''
+            '@DESC@':'', '@CLASS@':'', '@FUNC@':'', '@DATA@':'',
+            '@EXAMPLE@':'', '@NOTES@':'', '@SEEALSO@':'',
+            '@DETAILS@':'', '@TREE@':''
             }
+        dodata = True
+        if self['desc']['details']:
+            if self['desc']['details'].strip().split('\n')[0] == 'See Source Code':
+                dodata = False
+                try:
+                    fd = open(self['file'],"rb")
+                    try:     rawdata = fd.readlines()
+                    finally: fd.close()
+                except IOError:
+                    raise IOError(" Oops! File does not exist or is not readable: {0}".format(self['file']))
+                ok = False
+                for l in rawdata:
+                    if l.strip() == '##DETAILS_START':
+                        ok = True
+                    elif l.strip() == '##DETAILS_END':
+                        ok = False
+                    elif ok:
+                        if l[0] == '#':
+                            d['@DETAILS@'] += l[1:]
+                        else:
+                            d['@DETAILS@'] += l
+            else:
+                d['@DETAILS@'] = self['desc']['details']
         if self['desc']:
             d['@DESC@'] = self['desc'].toWiki(allSymbols)
-        if self['class']:
-            d['@CLASS@'] = self['class'].toWiki(allSymbols)
-        if self['func']:
+        if dodata and self['class']:
+            d['@CLASS@'] = self['class'].toWiki(allSymbols, tmpl=tmpl['classlist'].replace('@TREE@',self['tree']))
+        if dodata and self['func']:
             d['@FUNC@'] = self['func'].toWiki(allSymbols)
-        if self['data']:
+        if dodata and self['data']:
             d['@DATA@'] = self['data'].toWiki(allSymbols)
-        if self['tree']:
+        if dodata and self['tree']:
             d['@TREE@'] = self['tree']
+        if self['desc']['example']:
+            d['@EXAMPLE@'] = get_example(self['desc']['example'])
+        if self['desc']['notes']:
+            d['@NOTES@'] = get_warning(self['desc']['warning']) + get_notes(self['desc']['notes'])
+        if self['desc']['seealso']:
+            d['@SEEALSO@'] = get_seealso(self['desc']['seealso'], allSymbols)
+        
         s = tmpl['head']
+        ## pp.pprint(d)
         for k in d.keys():
             s = s.replace(k, d[k])
         return s
@@ -518,18 +581,22 @@ if __name__ == "__main__":
         'rpnpy.librmn.grids',
         'rpnpy.librmn.fstd98',
         'rpnpy.librmn.interp',
+        'rpnpy.librmn.burp',
+        'rpnpy.librmn.burp_const',
+        'rpnpy.utils.fstd3d',
+        'rpnpy.utils.burpfile',
         'rpnpy.utils.llacar',
         'rpnpy.utils.thermoconsts',
         'rpnpy.utils.thermofunc',
         'rpnpy.librmn.proto',
+        'rpnpy.librmn.proto_burp',
         'rpnpy.vgd',
         'rpnpy.vgd.all',
         'rpnpy.vgd.base',
         'rpnpy.vgd.const',
-        ## 'rpnpy.vgd.proto'
+        'rpnpy.vgd.proto'
         ]
     docdir = './doc/'
-    linkPrefix = 'Python-RPN/2.0/'
     m = []
     allSymbolsDict = {}
     for x in moduleNames:
@@ -542,14 +609,14 @@ if __name__ == "__main__":
     for x in m:
         curFile = x['name']
         filename = docdir+curFile+'.txt'
-        print("Producing doc for: %s" % curFile)
+        print("Producing doc for: {}".format(curFile))
         try:
             fd = open(filename, "wb")
             try:
                 fd.write(x.toWiki(allSymbolsDictKeys))
             except IOError:
-                raise IOError(" Oops! Cannot wrtie to file: %s" % (filename))
+                raise IOError(" Oops! Cannot write to file: {}".format(filename))
             finally:
                 fd.close()
         except IOError:
-            raise IOError(" Oops! Cannot open file: %s" % (filename))
+            raise IOError(" Oops! Cannot open file: ()".format(filename))

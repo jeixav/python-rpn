@@ -8,6 +8,18 @@
 """
 Module librmn.base contains python wrapper to
 main librmn, base and primitives C functions
+
+Notes:
+    The functions described below are a very close ''port'' from the original
+    [[librmn]]'s [[Librmn/FSTDfunctions|FSTD]] package.<br>
+    You may want to refer to the [[Librmn/FSTDfunctions|FSTD]]
+    documentation for more details.
+
+See Also:
+    rpnpy.librmn.fstd98
+    rpnpy.librmn.interp
+    rpnpy.librmn.grids
+    rpnpy.librmn.const
 """
 
 import ctypes as _ct
@@ -36,9 +48,9 @@ class RMNBaseError(RMNError):
     >>> import sys
     >>> import rpnpy.librmn.all as rmn
     >>> try:
-    >>>     xg1234 = rmn.cigaxg('E', 0, 0, 0, 0)
-    >>> except rmn.RMNBaseError:
-    >>>     sys.stderr.write("There was a problem getting decoded grid values.")
+    ...     xg1234 = rmn.cigaxg('E', 0, 0, 0, 0)
+    ... except rmn.RMNBaseError:
+    ...     sys.stderr.write("There was a problem getting decoded grid values.")
 
     See also:
         rpnpy.librmn.RMNError
@@ -57,7 +69,7 @@ def fclos(iunit):
         iunit   : unit number associated to the file
                   obtained with fnom or fstopenall
     Returns:
-        None
+        0 on succes
     Raises:
         TypeError  on wrong input arg types    
         ValueError on invalid input arg value
@@ -68,10 +80,10 @@ def fclos(iunit):
     >>> import rpnpy.librmn.all as rmn
     >>> filename = 'myfstfile.fst'
     >>> try:
-    >>>     iunit = rmn.fnom(filename, rmn.FST_RW)
-    >>> except rmn.RMNBaseError:
-    >>>     sys.stderr.write("There was a problem opening the file: {0}".format(filename))
-    >>> rmn.fclos(iunit)
+    ...     iunit = rmn.fnom(filename, rmn.FST_RW)
+    ... except rmn.RMNBaseError:
+    ...     sys.stderr.write("There was a problem opening the file: {0}".format(filename))
+    >>> istat = rmn.fclos(iunit)
     >>> os.unlink(filename)  # Remove test file
     
     
@@ -113,10 +125,10 @@ def fnom(filename, filemode=_rc.FST_RW, iunit=0):
     >>> import rpnpy.librmn.all as rmn
     >>> filename = 'myfstfile.fst'
     >>> try:
-    >>>     iunit = rmn.fnom(filename, rmn.FST_RW)
-    >>> except rmn.RMNBaseError:
-    >>>     sys.stderr.write("There was a problem opening the file: {0}".format(filename))
-    >>> rmn.fclos(iunit)
+    ...     iunit = rmn.fnom(filename, rmn.FST_RW)
+    ... except rmn.RMNBaseError:
+    ...     sys.stderr.write("There was a problem opening the file: {0}".format(filename))
+    >>> istat = rmn.fclos(iunit)
     >>> os.unlink(filename)  # Remove test file
     
     See also:
@@ -239,9 +251,9 @@ def crc32(crc, buf):
     >>> import rpnpy.librmn.all as rmn
     >>> buf = np.array([4,3,7,1,9], dtype=np.uint32)
     >>> try:
-    >>>     crc = rmn.crc32(0,buf)
-    >>> except:
-    >>>     sys.stderr.write("There was a problem computing CRC value.")
+    ...     crc = rmn.crc32(0,buf)
+    ... except:
+    ...     sys.stderr.write("There was a problem computing CRC value.")
     """
     if not (buf.dtype == _np.uint32 and buf.flags['F_CONTIGUOUS']):
         buf = _np.asfortranarray(buf, dtype=_np.uint32)
@@ -273,9 +285,9 @@ def cigaxg(grtyp, ig1, ig2=0, ig3=0, ig4=0):
     >>> import sys
     >>> import rpnpy.librmn.all as rmn
     >>> try:
-    >>>     xg1234 = rmn.cigaxg('E', 0, 0, 0, 0)
-    >>> except rmn.RMNBaseError:
-    >>>     sys.stderr.write("There was a problem getting decoded grid values.")
+    ...     xg1234 = rmn.cigaxg('E', 0, 0, 0, 0)
+    ... except rmn.RMNBaseError:
+    ...     sys.stderr.write("There was a problem getting decoded grid values.")
     
     See also:
        cxgaig
@@ -329,9 +341,9 @@ def cxgaig(grtyp, xg1, xg2=0., xg3=0., xg4=0.):
     >>> import sys
     >>> import rpnpy.librmn.all as rmn
     >>> try:
-    >>>     ig1234 = rmn.cxgaig('L', -89.5, 180.0, 0.5, 0.5)
-    >>> except rmn.RMNBaseError:
-    >>>     sys.stderr.write(There was a problem getting encoded grid values.")
+    ...     ig1234 = rmn.cxgaig('L', -89.5, 180.0, 0.5, 0.5)
+    ... except rmn.RMNBaseError:
+    ...     sys.stderr.write("There was a problem getting encoded grid values.")
     
     See also:
        cigaxg
@@ -381,10 +393,10 @@ def incdatr(idate, nhours):
     >>> import rpnpy.librmn.all as rmn
     >>> (yyyymmdd, hhmmsshh, nhours0) = (20150123, 0, 6.)
     >>> try:
-    >>>     idate1 = rmn.newdate(rmn.NEWDATE_PRINT2STAMP, yyyymmdd, hhmmsshh)
-    >>>     idate2 = rmn.incdatr(idate1, nhours0)
-    >>> except rmn.RMNBaseError:
-    >>>     sys.stderr.write("There was a problem computing increased date.")
+    ...     idate1 = rmn.newdate(rmn.NEWDATE_PRINT2STAMP, yyyymmdd, hhmmsshh)
+    ...     idate2 = rmn.incdatr(idate1, nhours0)
+    ... except rmn.RMNBaseError:
+    ...     sys.stderr.write("There was a problem computing increased date.")
     
     See also:
         newdate
@@ -431,11 +443,11 @@ def difdatr(idate1, idate2):
     >>> import rpnpy.librmn.all as rmn
     >>> (yyyymmdd, hhmmsshh, nhours0) = (20150123, 0, 6.)
     >>> try:
-    >>>     idate1 = rmn.newdate(rmn.NEWDATE_PRINT2STAMP, yyyymmdd, hhmmsshh)
-    >>>     idate2 = rmn.incdatr(idate1, nhours0)
-    >>>     nhours = rmn.difdatr(idate2, idate1)
-    >>> except rmn.RMNBaseError:
-    >>>     sys.stderr.write("There was a problem computing date diff.")
+    ...     idate1 = rmn.newdate(rmn.NEWDATE_PRINT2STAMP, yyyymmdd, hhmmsshh)
+    ...     idate2 = rmn.incdatr(idate1, nhours0)
+    ...     nhours = rmn.difdatr(idate2, idate1)
+    ... except rmn.RMNBaseError:
+    ...     sys.stderr.write("There was a problem computing date diff.")
     
     See also:
         newdate
@@ -611,7 +623,7 @@ def newdate(imode, idate1, idate2=0):
     Details:
        Options details if 
            outdate = newdate(imode, idate1, idate2)
-       
+
        imode CAN TAKE THE FOLLOWING VALUES:
           -7, -6, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6, 7
        imode=1 : STAMP TO (TRUE_DATE AND RUN_NUMBER)
@@ -683,15 +695,26 @@ def newdate(imode, idate1, idate2=0):
           odate1 : DATE OF THE PRINTABLE DATE (YYYYMMDD)
           odate2 : TIME OF THE PRINTABLE DATE (HHMMSSHH)
 
+    Note:
+        Old Style Date Array is composed of 14 elements:
+        0 : Day of the week (1=Sunday, ..., 7=Saturday
+        1 : Month (1=Jan, ..., 12=Dec)
+        2 : Day of the Month
+        3 : Year
+        4 : Hour of the Day
+        5 : Minutes  * 60 * 100
+        ...
+        13: CMC Date-Time Stamp
+       
     Examples:
     >>> import sys
     >>> import rpnpy.librmn.all as rmn
     >>> (yyyymmdd, hhmmsshh) = (20150123, 0)
     >>> try:
-    >>>     idate1 = rmn.newdate(rmn.NEWDATE_PRINT2STAMP, yyyymmdd, hhmmsshh)
-    >>>     (yyyymmdd2, hhmmsshh2) = rmn.newdate(rmn.NEWDATE_STAMP2PRINT, idate1)
-    >>> except rmn.RMNBaseError:
-    >>>     sys.stderr.write("There was a problem encoding/decoding the date.")
+    ...     idate1 = rmn.newdate(rmn.NEWDATE_PRINT2STAMP, yyyymmdd, hhmmsshh)
+    ...     (yyyymmdd2, hhmmsshh2) = rmn.newdate(rmn.NEWDATE_STAMP2PRINT, idate1)
+    ... except rmn.RMNBaseError:
+    ...     sys.stderr.write("There was a problem encoding/decoding the date.")
     
     See also:
         accept_leapyear
@@ -705,11 +728,17 @@ def newdate(imode, idate1, idate2=0):
         rpnpy.rpndate
     """
     if type(imode) != int:
-        raise TypeError("incdatr: Expecting imode of type int, Got {0} : {1}"\
+        raise TypeError("newdate: Expecting imode of type int, Got {0} : {1}"\
                         .format(type(imode), repr(imode)))
-    if type(idate1) != int or type(idate2) != int:
-        raise TypeError("newdate: Expecting idate1, 2 of type int, " +
-                        "Got {0}, {1}".format(type(idate1), type(idate2)))
+    if imode != 4:
+        if type(idate1) != int or type(idate2) != int:
+            raise TypeError("newdate: Expecting idate1, 2 of type int, " +
+                            "Got {0}, {1}".format(type(idate1), type(idate2)))
+    else:
+        if not isinstance(idate1, (list, tuple)) or len(idate1) != 14:
+            raise TypeError("newdate: Expecting idate1 of type=list, len=14, " +
+                            "Got type={0}, len={1}".format(type(idate1), len(idate1)))
+        
     if idate1 < 0 or idate2 < 0:
         raise ValueError("newdate: must provide a valid idates: {0}, {1}"\
                          .format(idate1, idate2))
@@ -727,11 +756,11 @@ def newdate(imode, idate1, idate2=0):
         (cidate2, cidate3) = (_ct.c_int(idate1), _ct.c_int(idate2))
     elif imode == -3:
         cidate1 = _ct.c_int(idate1)
-    #TODO: add support for imode == 4
-    ## elif imode == 4:
-    ##    (cidate2, cidate3) = (_ct.c_int(idate1), _ct.c_int(idate2))
-    ## elif imode == -4:
-    ##    (cidate1, cidate3) = (_ct.c_int(idate1), _ct.c_int(idate2))
+    elif imode == 4:
+       cidate2 = _np.asfortranarray(idate1, dtype=_np.int32)
+    elif imode == -4:
+       cidate1 = _ct.c_int(idate1)
+       cidate2 = _np.zeros((14,), dtype=_np.int32, order='F')
     elif imode == 5:
         (cidate2, cidate3) = (_ct.c_int(idate1), _ct.c_int(idate2))
     elif imode == -5:
@@ -745,9 +774,13 @@ def newdate(imode, idate1, idate2=0):
     elif imode == -7:
         cidate1 = _ct.c_int(idate1)
     else:
-        raise ValueError("incdatr: must provide a valid imode: {0}".format(imode))
-    istat = _rp.f_newdate(_ct.byref(cidate1), _ct.byref(cidate2),
-                          _ct.byref(cidate3), _ct.byref(cimode))
+        raise ValueError("newdate: must provide a valid imode: {0}".format(imode))
+    if imode in (4, -4):
+       istat = _rp.f_newdate(_ct.byref(cidate1), cidate2,
+                             _ct.byref(cidate3), cimode)
+    else:
+       istat = _rp.f_newdate(_ct.byref(cidate1), _ct.byref(cidate2),
+                             _ct.byref(cidate3), _ct.byref(cimode))
     if istat == 1: #TODO: check this, should it be (istat < 0)
         raise RMNBaseError()
     if imode == 1:
@@ -762,11 +795,10 @@ def newdate(imode, idate1, idate2=0):
         return cidate1.value
     elif imode == -3:
         return (cidate2.value, cidate3.value)
-    #TODO: add support for imode == 4
-    ## elif imode == 4:
-    ##     return cidate1.value
-    ## elif imode == -4:
-    ##     return cidate2.value
+    elif imode == 4:
+        return cidate1.value
+    elif imode == -4:
+        return list(cidate2)
     elif imode == 5:
         return cidate1.value
     elif imode == -5:

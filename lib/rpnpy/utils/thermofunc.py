@@ -19,9 +19,14 @@
 # Copyright: LGPL 2.1
 
 """
-Module utils.thermofunc defines basic thermodynamic functions used in RPNPhy
+Module utils.thermofunc (TDpack) defines basic thermodynamic functions used in RPNPhy
 
 Note: All functions uses SI units (e.g. ttt  [k], prs [pa], qqq [kg/kg])
+
+See Also:
+    rpnpy.utils.thermoconst
+
+Details:
 
 * FOEW(ttt):
     calcule la tension de vapeur saturante (formule de Tetens);
@@ -227,3 +232,13 @@ FQSMXX = lambda FESMX8,PRS: \
     _DBLE(EPS1)/(_DMAX1(1.,_DBLE(PRS)/FESMX8)-_DBLE(EPS2))
 FDQSMX = lambda QSM,DLEMX: \
     _DBLE(QSM)*(1.+_DBLE(DELTA)*_DBLE(QSM))*_DBLE(DLEMX)
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+
+
+# -*- Mode: C; tab-width: 4; indent-tabs-mode: nil -*-
+# vim: set expandtab ts=4 sw=4:
+# kate: space-indent on; indent-mode cstyle; indent-width 4; mixedindent off;

@@ -8,8 +8,26 @@
 """
 Module librmn_const defines a set of helper constants to make code
 using the librmn module more readable.
+
+Notes:
+    This module is a very close ''port'' from the original
+    [[librmn]]'s [[Librmn/FSTDfunctions|FSTD]] package.<br>
+    You may want to refer to the [[Librmn/FSTDfunctions|FSTD]]
+    documentation for more details.
+
+See Also:
+    rpnpy.librmn.base
+    rpnpy.librmn.fstd98
+    rpnpy.librmn.interp
+    rpnpy.librmn.grids
+
+Details:
+    See Source Code
 """
 import numpy  as _np
+
+##DETAILS_START
+#== Constants Details ==
 
 #=== primitives ===
 #<source lang=python>
@@ -60,10 +78,12 @@ WKOFFIT_TYPE_LIST_INV = dict([(v, k) for k, v in WKOFFIT_TYPE_LIST.items()])
 #=== base ===
 
 #<source lang=python>
-NEWDATE_PRINT2TRUE  = 2
+NEWDATE_PRINT2TRUE  =  2
 NEWDATE_TRUE2PRINT  = -2
-NEWDATE_PRINT2STAMP = 3
+NEWDATE_PRINT2STAMP =  3
 NEWDATE_STAMP2PRINT = -3
+NEWDATE_ARRAY2STAMP =  4
+NEWDATE_STAMP2ARRAY = -4
 
 NEWDATE_OPT_360DAYS   = 'year=360_day'
 NEWDATE_OPT_365DAYS   = 'year=365_day'
@@ -206,27 +226,27 @@ FST_DATYP_LIST = {
 
 ## Numpy versus FSTD data type equivalence
 FST_DATYP2NUMPY_LIST = { #TODO: review
-    0: _np.uint32  , # binary, transparent
-    1: _np.float32 , # floating point
-    2: _np.uint32  , # unsigned integer
-    3: _np.uint32  , # character (R4A in an integer)
-    4: _np.int32   , # signed integer
-    5: _np.float32 , # IEEE floating point
-    6: _np.float32 , # floating point (16 bit, made for compressor)
-    7: _np.uint8   , # character string
-    8: _np.complex64 , # complex IEEE
+    0: _np.uint32,   # binary, transparent
+    1: _np.float32,  # floating point
+    2: _np.uint32,   # unsigned integer
+    3: _np.uint32,   # character (R4A in an integer)
+    4: _np.int32,    # signed integer
+    5: _np.float32,  # IEEE floating point
+    6: _np.float32,  # floating point (16 bit, made for compressor)
+    7: _np.uint8,    # character string
+    8: _np.complex64 # complex IEEE
 }
 
 FST_DATYP2NUMPY_LIST64 = { #TODO: review
-    0: _np.uint64  , # binary, transparent
-    1: _np.float64 , # floating point
-    2: _np.uint64  , # unsigned integer
-    3: _np.uint64  , # character (R4A in an integer)
-    4: _np.int64   , # signed integer
-    5: _np.float64 , # IEEE floating point
-    6: _np.float64 , # floating point (16 bit, made for compressor)
-    #7: _np.uint8   , # character string
-    8: _np.complex128 , # complex IEEE
+    0: _np.uint64,  # binary, transparent
+    1: _np.float64, # floating point
+    2: _np.uint64,  # unsigned integer
+    3: _np.uint64,  # character (R4A in an integer)
+    4: _np.int64,   # signed integer
+    5: _np.float64, # IEEE floating point
+    6: _np.float64, # floating point (16 bit, made for compressor)
+    #7: _np.uint8,  # character string
+    8: _np.complex128  # complex IEEE
 }
 #</source>
 
@@ -330,28 +350,14 @@ EZ_CLOUD_INTERP_LINEAR = 'LINEAR'
 EZ_OPT_USE_1SUBGRID = 'USE_1SUBGRID'
 ## YES or NO
 #</source>
+##DETAILS_END
 
-#=== BURP  ===
 
-#<source lang=python>
-MRBCVT_DECODE = 0
-MRBCVT_ENCODE = 1
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
 
-BURP_MODE_READ   = 'READ'
-BURP_MODE_CREATE = 'CREATE'
-BURP_MODE_APPEND = 'APPEND'
-#</source>
 
-#==== mrfopt (options) ====
-
-#<source lang=python>
-BURPOP_MISSING = 'MISSING'
-BURPOP_MSGLVL  = 'MSGLVL'
-
-BURPOP_MSG_TRIVIAL = 'TRIVIAL'
-BURPOP_MSG_INFO    = 'INFORMATIF'
-BURPOP_MSG_WARNING = 'WARNING'
-BURPOP_MSG_ERROR   = 'ERROR'
-BURPOP_MSG_FATAL   = 'FATAL'
-BURPOP_MSG_SYSTEM  = 'SYSTEM'
-#</source>
+# -*- Mode: C; tab-width: 4; indent-tabs-mode: nil -*-
+# vim: set expandtab ts=4 sw=4:
+# kate: space-indent on; indent-mode cstyle; indent-width 4; mixedindent off;
