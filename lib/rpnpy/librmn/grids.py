@@ -56,7 +56,8 @@ def decodeIG2dict(grtyp, ig1, ig2, ig3, ig4):
         ValueError on invalid input arg value
         RMNError   on any other error
     
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> # Encode a LatLon Grid parameters
     >>> grtyp = 'L'
@@ -113,7 +114,8 @@ def decodeXG2dict(grtyp, xg1, xg2, xg3, xg4):
         ValueError on invalid input arg value
         RMNError   on any other error
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> # Encode a LatLon Grid parameters
     >>> grtyp = 'L'
@@ -211,7 +213,8 @@ def decodeGrid(gid):
         ValueError on invalid input arg value
         RMNError   on any other error
         
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> # Define a LatLon Grid
     >>> (lat0, lon0, dlat, dlon) = (0.,180.,1.,0.5)
@@ -395,7 +398,8 @@ def getIgTags(params):
         TypeError    on wrong input arg types
         RMNError     on any other error
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> # Define a Rotated LatLon Grid
     >>> (ni, nj) = (90,45)
@@ -477,7 +481,8 @@ def readGrid(funit, params):
     Notes:
         readGrid function is only available from python-rpn version 2.0.rc1
 
-    Examples:
+    Example:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES')
@@ -555,7 +560,8 @@ def writeGrid(funit, params):
     Notes:
         writeGrid function is only available from python-rpn version 2.0.rc1
 
-    Examples:
+    Example:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES')
@@ -669,7 +675,8 @@ def encodeGrid(params):
         ValueError on invalid input arg value
         RMNError   on any other error
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> params0 = { \
             'grtyp' : 'Z', \
@@ -770,7 +777,8 @@ def defGrid_L(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
         ValueError on invalid input arg value
         RMNError   on any other error
         
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> (lat0, lon0, dlat, dlon) = (0.,180.,1.,0.5)
     >>> (ni, nj) = (180, 90)
@@ -865,7 +873,8 @@ def defGrid_E(ni, nj=None, xlat1=None, xlon1=None, xlat2=None, xlon2=None,
         ValueError on invalid input arg value
         RMNError   on any other error
         
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> (ni, nj) = (90,45)
     >>> (xlat1, xlon1, xlat2, xlon2) = (0., 180., 1., 270.)
@@ -985,7 +994,8 @@ def defGrid_ZE(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
         ValueError on invalid input arg value
         RMNError   on any other error
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> params0 = { \
             'ni'    : 90, \
@@ -1102,7 +1112,8 @@ def defGrid_ZEr(ni, nj=None, rlat0=None, rlon0=None, dlat=None, dlon=None,
         ValueError on invalid input arg value
         RMNError   on any other error
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> params0 = { \
             'ni'    : 90, \
@@ -1288,7 +1299,8 @@ def defGrid_diezeE(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
         ValueError on invalid input arg value
         RMNError   on any other error
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> params0 = { \
             'lni'   : 180, \
@@ -1403,7 +1415,8 @@ def defGrid_ZL(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
         ValueError on invalid input arg value
         RMNError   on any other error
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> params0 = { \
             'ni'    : 90, \
@@ -1546,7 +1559,8 @@ def defGrid_diezeL(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
         ValueError on invalid input arg value
         RMNError   on any other error
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> params0 = { \
             'lni'   : 180, \
@@ -1651,7 +1665,8 @@ def defGrid_YL(ax, ay=None, setGridId=True):
         ValueError on invalid input arg value
         RMNError   on any other error
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> params0 = { \
             'ax'    : ( 45.,  46.5),\
@@ -1759,7 +1774,8 @@ def defGrid_G(ni, nj=None, glb=True, north=True, inverted=False,
         ValueError on invalid input arg value
         RMNError   on any other error
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> params = rmn.defGrid_G(90, 45, glb=True, north=True, inverted=False)
 
@@ -1854,7 +1870,8 @@ def defGrid_PS(ni, nj=None, north=True, pi=None, pj=None, d60=None,
         ValueError on invalid input arg value
         RMNError   on any other error
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> params = rmn.defGrid_PS(90, 45, north=True, pi=45, pj=30, d60=5000., dgrw=270.)
 
@@ -1973,7 +1990,8 @@ def defGrid_YY(nj, overlap=0., xlat1=0., xlon1=180., xlat2=0., xlon2=270.,
         ValueError on invalid input arg value
         RMNError   on any other error
         
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> params = rmn.defGrid_YY(31, overlap=1.5, xlat1=0., xlon1=180., \
                                 xlat2=0., xlon2=270.)
@@ -2085,7 +2103,8 @@ def yyg_yangrot_py(yinlat1, yinlon1, yinlat2, yinlon2):
     Raises:
         TypeError  on wrong input arg types    
         
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> (xlat1, xlon1, xlat2, xlon2)    = (0., 180., 0., 270.)
     >>> (xlat1b, xlon1b,xlat2b, xlon2b) = rmn.yyg_yangrot_py(xlat1, xlon1, xlat2, xlon2)
@@ -2143,7 +2162,8 @@ def yyg_pos_rec(yinlat1, yinlon1, yinlat2, yinlon2, ax, ay):
     Returns:
         numpy.ndarray, positional record describing the yy-grid
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> params0 = { \
             'ni'    : 90, \
@@ -2233,7 +2253,8 @@ def egrid_rot_matrix(xlat1, xlon1, xlat2, xlon2):
     Raises:
         TypeError  on wrong input arg types    
         
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> (xlat1, xlon1, xlat2, xlon2)    = (0., 180., 0., 270.)
     >>> (xlat1b, xlon1b,xlat2b, xlon2b) = rmn.yyg_yangrot_py(xlat1, xlon1, xlat2, xlon2)
@@ -2289,7 +2310,8 @@ def egrid_rll2ll(xlat1, xlon1, xlat2, xlon2, rlat, rlon):
     Raises:
         TypeError  on wrong input arg types    
         
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> (xlat1, xlon1, xlat2, xlon2)    = (0., 180., 0., 270.)
     >>> (rlat, rlon) = (45., 271.)
@@ -2341,7 +2363,8 @@ def egrid_ll2rll(xlat1, xlon1, xlat2, xlon2, lat, lon):
     Raises:
         TypeError  on wrong input arg types    
         
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> (xlat1, xlon1, xlat2, xlon2)    = (0., 180., 0., 270.)
     >>> (lat, lon)   = (45., 271.)

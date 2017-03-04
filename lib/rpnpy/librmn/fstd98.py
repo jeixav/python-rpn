@@ -36,7 +36,8 @@ class FSTDError(RMNError):
     """
     General librmn.fstd98 module error/exception
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> try:
     >>>    #... an fst98 operation ...
@@ -78,7 +79,8 @@ def dtype_fst2numpy(datyp, nbits=None):
         TypeError on wrong input arg types
         FSTDError if no corresponding type found
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> fst_datyp   = rmn.FST_DATYP_LIST['float_IEEE_compressed']
     >>> numpy_dtype = rmn.dtype_fst2numpy(fst_datyp)
@@ -118,7 +120,8 @@ def dtype_numpy2fst(npdtype, compress=True, missing=False):
     Raises:
         TypeError on wrong input arg types
         
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> import numpy as np
     >>> numpy_dtype = np.float32
@@ -161,7 +164,8 @@ def isFST(filename):
         TypeError  on wrong input arg types
         ValueError on invalid input arg value
 
-    Examples:
+    Example:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES').strip()
@@ -200,7 +204,8 @@ def fstopenall(paths, filemode=_rc.FST_RO, verbose=None):
         ValueError on invalid input arg value
         FSTDError  on any other error
 
-    Examples:
+    Example:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES').strip()
@@ -300,7 +305,8 @@ def fstcloseall(iunit):
         ValueError on invalid input arg value
         FSTDError  on any other error
         
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn    
     >>> funit = rmn.fstopenall('mynewfile.fst', rmn.FST_RW)
     >>> #...
@@ -356,7 +362,8 @@ def listToFLOATIP(rp1):
     Raises:
         TypeError on wrong input arg types
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn    
     >>> pk1 = rmn.listToFLOATIP((500., 500., rmn.KIND_PRESSURE))
     >>> pk2 = rmn.listToFLOATIP((0.,     0., rmn.KIND_HOURS))
@@ -394,7 +401,8 @@ def FLOATIPtoList(rp1):
              v2=v1 if not a range
         kind: level kind (int), one of FSTD ip accepted kind
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> pk1 = rmn.listToFLOATIP((500., 500., rmn.KIND_PRESSURE))
     >>> pk2 = rmn.listToFLOATIP((0.,     0., rmn.KIND_HOURS))
@@ -448,7 +456,8 @@ def fstecr(iunit, data, meta=None, rewrite=True):
         ValueError on invalid input arg value
         FSTDError  on any other error
 
-    Examples:
+    Example:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES').strip()
@@ -588,7 +597,8 @@ def fst_edit_dir(key, datev=-1, dateo=-1, deet=-1, npas=-1, ni=-1, nj=-1, nk=-1,
         ValueError on invalid input arg value
         FSTDError  on any other error
     
-    Examples:
+    Example:
+
     >>> import os, os.path, stat, shutil
     >>> import rpnpy.librmn.all as rmn
     >>> 
@@ -706,7 +716,8 @@ def fsteff(key):
         ValueError on invalid input arg value
         FSTDError  on any other error
 
-    Examples:
+    Example:
+
     >>> import os, os.path, stat, shutil
     >>> import rpnpy.librmn.all as rmn
     >>> 
@@ -780,7 +791,8 @@ def fstfrm(iunit):
         ValueError on invalid input arg value
         FSTDError  on any other error
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> funit = rmn.fnom('myfstfile.fst', rmn.FST_RW)
     >>> istat = rmn.fstouv(funit, rmn.FST_RW)
@@ -844,7 +856,8 @@ def fstinf(iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
         ValueError on invalid input arg value
         FSTDError  on any other error
         
-    Examples:
+    Example:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES').strip()
@@ -905,7 +918,8 @@ def fstinfx(key, iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
         ValueError on invalid input arg value
         FSTDError  on any other error
         
-    Examples:
+    Example:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES').strip()
@@ -984,7 +998,8 @@ def fstinl(iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
         ValueError on invalid input arg value
         FSTDError  on any other error
         
-    Examples:
+    Example:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES').strip()
@@ -1107,7 +1122,8 @@ def fstlir(iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
         ValueError on invalid input arg value
         FSTDError  on any other error       
         
-    Examples:
+    Example:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES').strip()
@@ -1177,7 +1193,8 @@ def fstlirx(key, iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
         ValueError on invalid input arg value
         FSTDError  on any other error       
         
-    Examples:
+    Example:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES').strip()
@@ -1237,7 +1254,8 @@ def fstlis(iunit, dtype=None, rank=None, dataArray=None):
         ValueError on invalid input arg value
         FSTDError  on any other error       
         
-    Examples:
+    Example:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES').strip()
@@ -1288,7 +1306,8 @@ def fstlnk(unitList):
         ValueError on invalid input arg value
         FSTDError  on any other error       
         
-    Examples:
+    Example:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>> 
@@ -1371,7 +1390,8 @@ def fstluk(key, dtype=None, rank=None, dataArray=None):
         ValueError on invalid input arg value
         FSTDError  on any other error
         
-    Examples:
+    Example:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES').strip()
@@ -1462,7 +1482,8 @@ def fstnbr(iunit):
         ValueError on invalid input arg value
         FSTDError  on any other error
 
-    Examples:
+    Example:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES').strip()
@@ -1511,7 +1532,8 @@ def fstnbrv(iunit):
         ValueError on invalid input arg value
         FSTDError  on any other error
 
-    Examples:
+    Example:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES').strip()
@@ -1577,7 +1599,8 @@ def fstopt(optName, optValue, setOget=_rc.FSTOP_SET):
         ValueError on invalid input arg value
         FSTDError  on any other error
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> # Restrict to the minimum the number of messages printed by librmn
     >>> rmn.fstopt(rmn.FSTOP_MSGLVL,rmn.FSTOPI_MSG_CATAST)
@@ -1616,7 +1639,8 @@ def fstouv(iunit, filemode=_rc.FST_RW):
         ValueError on invalid input arg value
         FSTDError  on any other error
 
-    Examples:
+    Example:
+
     >>> import os
     >>> import rpnpy.librmn.all as rmn
     >>> funit = rmn.fnom('myfstfile.fst', rmn.FST_RW)
@@ -1694,7 +1718,8 @@ def fstprm(key):
         ValueError on invalid input arg value
         FSTDError  on any other error
 
-    Examples:
+    Example:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES').strip()
@@ -1811,7 +1836,8 @@ def fstsui(iunit):
         ValueError on invalid input arg value
         FSTDError  on any other error
 
-    Examples:
+    Example:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES').strip()
@@ -1879,7 +1905,8 @@ def fstvoi(iunit, options=' '):
         ValueError on invalid input arg value
         FSTDError  on any other error
 
-    Examples:
+    Example:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES').strip()
@@ -1921,7 +1948,8 @@ def fst_version():
     Returns:
         int, fstd version number
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> print("# Using fst_version={0}".format(rmn.fst_version()))
     # Using fst_version=200001
@@ -1951,7 +1979,8 @@ def ip1_all(level, kind):
         ValueError on invalid input arg value
         FSTDError  on any other error
 
-    Examples:
+    Example:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES').strip()
@@ -2015,7 +2044,8 @@ def ip2_all(level, kind):
         ValueError on invalid input arg value
         FSTDError  on any other error
 
-    Examples:
+    Example:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES').strip()
@@ -2079,7 +2109,8 @@ def ip3_all(level, kind):
         ValueError on invalid input arg value
         FSTDError  on any other error
 
-    Examples:
+    Example:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES').strip()
@@ -2140,7 +2171,8 @@ def ip1_val(level, kind):
         ValueError on invalid input arg value
         FSTDError  on any other error
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> ip1new = rmn.ip1_val(500., rmn.LEVEL_KIND_PMB)
 
@@ -2185,7 +2217,8 @@ def ip2_val(level, kind):
         ValueError on invalid input arg value
         FSTDError  on any other error
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> ip2new = rmn.ip2_val(0., rmn.TIME_KIND_HR)
 
@@ -2230,7 +2263,8 @@ def ip3_val(level, kind):
         ValueError on invalid input arg value
         FSTDError  on any other error
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> ip3new = rmn.ip3_all(0., rmn.KIND_ARBITRARY)
 
@@ -2319,7 +2353,8 @@ def convertIp(mode, v, k=0):
         ValueError on invalid input arg value
         FSTDError  on any other error       
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> ip1 = rmn.convertIp(rmn.CONVIP_ENCODE_OLD, 500., rmn.KIND_PRESSURE)
     >>> ip1 = rmn.convertIp(rmn.CONVIP_ENCODE, 500., rmn.KIND_PRESSURE)
@@ -2387,7 +2422,8 @@ def convertIPtoPK(ip1, ip2, ip3):
         ValueError on invalid input arg value
         FSTDError  when provided values cannot be converted
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> 
     >>> # Encode 500mb at 12h,
@@ -2458,7 +2494,8 @@ def convertPKtoIP(pk1, pk2, pk3):
         ValueError on invalid input arg value
         FSTDError  when provided values cannot be converted
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> 
     >>> # Encode 500mb at 12h,
@@ -2523,7 +2560,8 @@ def EncodeIp(rp1, rp2, rp3):
         ValueError on invalid input arg value
         FSTDError  when provided values cannot be converted
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> 
     >>> # Encode 500mb at 12h,
@@ -2587,7 +2625,8 @@ def DecodeIp(ip1, ip2, ip3):
         ValueError on invalid input arg value
         FSTDError  when provided values cannot be converted
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> (ip1, ip2, ip3) = (6441456, 176280768, 66060288)
     >>> (rp1, rp2, rp3) = rmn.DecodeIp(ip1, ip2, ip3)
@@ -2627,7 +2666,8 @@ def kindToString(kind):
     Returns:
         str, str repr of the kind code
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> print('# '+rmn.kindToString(rmn.LEVEL_KIND_PMB))
     # mb
