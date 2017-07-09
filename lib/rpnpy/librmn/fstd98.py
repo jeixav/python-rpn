@@ -26,7 +26,6 @@ import os
 import ctypes as _ct
 import numpy  as _np
 import numpy.ctypeslib as _npc
-from rpnpy.librmn import proto as _rp
 from rpnpy.librmn import const as _rc
 from rpnpy.librmn import base as _rb
 from rpnpy.librmn import RMNError

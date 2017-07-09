@@ -24,7 +24,6 @@ See Also:
 
 import ctypes as _ct
 import numpy  as _np
-from rpnpy.librmn import proto as _rp
 from rpnpy.librmn import const as _rc
 from rpnpy.librmn import RMNError
 
