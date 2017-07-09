@@ -97,6 +97,9 @@ def loadRMNlib(rmn_version=None):
             if RMN_LIBPATH:
                 break
 
+    if not RMN_LIBPATH:
+        raise IOError(-1, 'Failed to find librmn.so: ', rmn_libfile)
+
     librmn = None
     try:
         librmn = ct.cdll.LoadLibrary(RMN_LIBPATH)
