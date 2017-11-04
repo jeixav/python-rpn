@@ -1,7 +1,9 @@
-Welcome to RPNPy's documentation!
-=================================
+###############
+RPNPy Reference
+###############
 
-Contents:
+:Release: |version|
+:Date: |today|
 
 .. toctree::
    :maxdepth: 2

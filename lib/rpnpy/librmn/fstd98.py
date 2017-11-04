@@ -426,32 +426,30 @@ def FLOATIPtoList(rp1):
     """
     Decode values from FLOAT_IP type/struct
     
-    (v1, v2, kind) = FLOATIPtoList(rp1)
-    
-    Args:
-        rp1 : encoded FLOAT_IP
+    Parameters
+    ----------
+        rp1 : FLOAT_IP): encoded
+
     Returns:
-        v1 : level 1st value (float)
-        v2 : level 2nd value (float)
-             v2=v1 if not a range
-        kind: level kind (int), one of FSTD ip accepted kind
+        (tuple): tuple containing:
+
+            v1 (float): Level 1st value
+            v2 (float): Level 2nd value, v2=v1 if not a range
+            kind (int): level kind, one of FSTD ip accepted kind
 
     Example:
 
     >>> import rpnpy.librmn.all as rmn
     >>> pk1 = rmn.listToFLOATIP((500., 500., rmn.KIND_PRESSURE))
-    >>> pk2 = rmn.listToFLOATIP((0.,     0., rmn.KIND_HOURS))
-    >>> pk3 = rmn.listToFLOATIP((0.,     0., 0))
+    >>> pk2 = rmn.listToFLOATIP((0., 0., rmn.KIND_HOURS))
+    >>> pk3 = rmn.listToFLOATIP((0., 0., 0))
     >>> (ip1, ip2, ip3) = rmn.convertPKtoIP(pk1, pk2, pk3)
     >>> (rp1, rp2, rp3) = rmn.convertIPtoPK(ip1, ip2, ip3)
-    >>> (v1, v2, kind)  = rmn.FLOATIPtoList(rp1)
+    >>> (v1, v2, kind) = rmn.FLOATIPtoList(rp1)
     
     See Also:
-        listToFLOATIP
-        convertPKtoIP
-        convertIPtoPK
-        rpnpy.librmn.proto.FLOAT_IP
-        rpnpy.librmn.const
+        `listToFLOATIP`, `convertPKtoIP`, `convertIPtoPK`,
+        rpnpy.librmn.proto.FLOAT_IP, rpnpy.librmn.const
     """
     if isinstance(rp1, _rp.FLOAT_IP):
         return (rp1.v1, rp1.v2, rp1.kind)
@@ -465,30 +463,38 @@ def fstecr(iunit, data, meta=None, rewrite=True):
     Writes record to file previously opened with fnom+fstouv
     
     fstecr(iunit, data, meta)
+
     fstecr(iunit, data, meta, rewrite=True)
+
     fstecr(iunit, rec)
     
     Args:
-        iunit : file unit number (int)
-        data  : data to be written (numpy.ndarray, FORTRAN order)
-        meta  : associated metadata (dict)
-                Not specified meta params will be set to their default value
-                as in FST_RDE_META_DEFAULT
-                The list of known parameters is the same a the one returned
-                by fstprm, see fstprm doc for details
-                You can force meta['datyp'] but for the 
-                sake of data/meta consistency, it is best not to specify
-                meta['datyp'], data.dtype will be used instead
-        rec   : data + meta in a dict
-                Option to provide data+meta in a single dict
-                where data = rec['d']
+        iunit (int): file unit number
+
+        data (numpy.ndarray: data to be written
+            FORTRAN order required
+
+        meta (dict): associated metadata
+            Unspecified meta params will be set to their default value
+            as in FST_RDE_META_DEFAULT. The list of known parameters is
+            the same a the one returned by fstprm, see fstprm doc for
+            details. You can force meta['datyp'] but for the sake of
+            data/meta consistency, it is best not to specify meta['datyp'],
+            data.dtype will be used instead
+
+        rec: data + meta in a dict
+            Option to provide data+meta in a single dict where
+            data = rec['d']
+
         rewrite : force to overwrite any other fields with same meta 
+
     Returns:
         None
+
     Raises:
-        TypeError  on wrong input arg types
-        ValueError on invalid input arg value
-        FSTDError  on any other error
+        TypeError: wrong input arg types
+        ValueError: invalid input arg value
+        FSTDError: any other error
 
     Example:
 
@@ -511,11 +517,7 @@ def fstecr(iunit, data, meta=None, rewrite=True):
     >>> rmn.fstcloseall(funitIn)
 
     See Also:
-        fstopenall
-        fstcloseall
-        fstlir
-        fstprm
-        fstluk
+        `fstopenall`, `fstcloseall`, `fstlir`, `fstprm`, `fstluk`
         rpnpy.librmn.const
     """
     if not (type(iunit) == int):
@@ -578,58 +580,61 @@ def fst_edit_dir(key, datev=-1, dateo=-1, deet=-1, npas=-1, ni=-1, nj=-1, nk=-1,
                  ip1=-1, ip2=-1, ip3=-1,
                  typvar=' ', nomvar=' ', etiket=' ', grtyp=' ',
                  ig1=-1, ig2=-1, ig3=-1, ig4=-1, datyp=-1, keep_dateo=False):
-    """
-    Edits the directory content of a RPN standard file
-    Only provided parameters with value different than default are updated
+    """Edits the directory content of a RPN standard file. Only provided
+    parameters with value different than default are updated.
     
-    Note: by default datev is kept constant unless
-          dateo is specified or
-          keep_dateo=True
+    Note: by default datev is kept constant unless dateo is specified or
+    keep_dateo=True.
 
     fst_edit_dir(key, ... )
     fst_edit_dir(rec, ... )
     fst_edit_dir(keylist, ... )
   
     Args:
-        key   : positioning information to the record,
-                obtained with fstinf or fstinl, ...
-        dateo : date of origin (date time stamp), cannot change dateo and datev
-        datev : valid date     (date time stamp), cannot change dateo and datev
-        deet  : length of a time step in seconds
-                (datev constant unless keep_dateo)
-        npas  : time step number (datev constant unless keep_dateo)
-        ni    : first dimension of the data field
-        nj    : second dimension of the data field
-        nk    : third dimension of the data field
-        nbits : number of bits kept for the elements of the field
-        datyp : data type of the elements
-        ip1   : vertical level
-        ip2   : forecast hour
-        ip3   : user defined identifier
+        key: Positioning information to the record.
+            Obtained with fstinf or fstinl.
+        dateo: date of origin (date time stamp)
+            Cannot change dateo and datev.
+        datev: date of validity (date time stamp)
+            Cannot change dateo and datev.
+        deet: Length of a time step in seconds
+            datev constant unless keep_dateo
+        npas: time step number
+            datev constant unless keep_dateo
+        ni: first dimension of the data field
+        nj: second dimension of the data field
+        nk: third dimension of the data field
+        nbits: number of bits kept for the elements of the field
+        datyp: data type of the elements
+        ip1: vertical level
+        ip2: forecast hour
+        ip3: user defined identifier
         typvar: type of field (forecast, analysis, climatology)
         nomvar: variable name
         etiket: label
-        grtyp : type of geographical projection
-        ig1   : first grid descriptor
-        ig2   : second grid descriptor
-        ig3   : third grid descriptor
-        ig4   : fourth grid descriptor
-        keep_dateo : by default datev is kept constant unless
-                     dateo is specified or
-                     keep_dateo=True
-                     (keep_dateo must be False is datev is provided)
+        grtyp: type of geographical projection
+        ig1: first grid descriptor
+        ig2: second grid descriptor
+        ig3: third grid descriptor
+        ig4: fourth grid descriptor
+        keep_dateo (bool):
+            By default datev is kept constant unless dateo is specified or
+            keep_dateo=True (keep_dateo must be False is datev is provided).
 
         From verion 2.0.rc1, this function can be called with a rec meta
         or keylist instead of a simple key number (int):
 
-        rec     (dict) : dictionary where key = rec['key']
+        rec (dict) : dictionary where key = rec['key']
+
         keylist (list) : list of keys for records to edit
+
     Returns:
         None
+
     Raises:
-        TypeError  on wrong input arg types
-        ValueError on invalid input arg value
-        FSTDError  on any other error
+        TypeError: wrong input arg types
+        ValueError: invalid input arg value
+        FSTDError: any other error
     
     Example:
 
@@ -653,26 +658,24 @@ def fst_edit_dir(key, datev=-1, dateo=-1, deet=-1, npas=-1, ni=-1, nj=-1, nk=-1,
     >>> # Iterate explicitely on list of records to change the etiket
     >>> for key in mykeylist: rmn.fst_edit_dir(key, etiket='MY_NEW_ETK')
     >>> 
-    >>> # Could also be written as a one liner list comprenhension:
+    >>> # Could also be written as one-line list comprehension:
     >>> # [rmn.fst_edit_dir(key, etiket='MY_NEW_ETK') for key in rmn.fstinl(funit)]
     >>> 
-    >>> # Iterate implicitely on list of records to change the etiket
+    >>> # Iterate implicitly on list of records to change the etiket
     >>> rmn.fst_edit_dir(mykeylist, etiket='MY_NEW_ETK')
     >>> 
     >>> # Properly close files, important when editing to avoid corrupted files
     >>> rmn.fstcloseall(funit)
 
     See Also:
-        fstopenall
-        fstcloseall
-        fstinl
-        fstinf
-        rpnpy.librmn.const
-
+        `fstopenall`, `fstcloseall`, `fstinl`, `fstinf`, rpnpy.librmn.const,
+        http://collaboration.cmc.ec.gc.ca/science/si/eng/si/libraries/rmnlib/fstd/
+        
     Notes:
         librmn_15.2 fst_edit_dir ignores ni,nj,nk,grtyp
         These parameters cannot thus be zapped.
         librmn_16 allows the edition of grtyp
+
     """
     if datev != -1:
         if dateo != -1:
@@ -855,40 +858,41 @@ def fstfrm(iunit):
 
 def fstinf(iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
            typvar=' ', nomvar=' '):
-    """
-    Locate the next record that matches the research keys
+    """Locate the next record that matches the search keys.
 
-    Returns the key of the first record (only one) match the
-    selection criteria.
+    Returns the key of the first record matching the selection
+    criteria.
     
-    Only provided parameters with value different than default
-    are used as selection criteria.
-    
-    Thus if you do not provide any other parameter that iunit, fstinf
-    will return the key to the first record in the file.
+    Only provided parameters with value different than default are
+    used as selection criteria. Thus if you do not provide any other
+    parameter that iunit, fstinf will return the key to the first
+    record in the file.
     
     recmatch = fstinf(iunit, ... )
     
     Args:
-        iunit   : unit number associated to the file
-                  obtained with fnom+fstouv
-        datev   : valid date
-        etiket  : label
-        ip1     : vertical level
-        ip2     : forecast hour
-        ip3     : user defined identifier
-        typvar  : type of field
-        nomvar  : variable name
+        iunit: unit number associated to the file obtained with
+            fnom+fstouv
+        datev: valid date
+        etiket: label
+        ip1: vertical level
+        ip2: forecast hour
+        ip3: user defined identifier
+        typvar: type of field
+        nomvar: variable name
+
     Returns:
-        None if no matching record, else:
+        None if no matching record, else::
+
         {
-            'key'   : key,       # key/handle of the 1st matching record
-            'shape' : (ni, nj, nk) # dimensions of the field
-         }
+            'key': key, # key/handle of the 1st matching record
+            'shape': (ni, nj, nk) # dimensions of the field
+        }
+
     Raises:
-        TypeError  on wrong input arg types
-        ValueError on invalid input arg value
-        FSTDError  on any other error
+        TypeError: wrong input arg types
+        ValueError: invalid input arg value
+        FSTDError: any other error
         
     Example:
 
@@ -907,33 +911,27 @@ def fstinf(iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
     >>> rmn.fstcloseall(funit)
 
     See Also:
-        fstinfx
-        fstinl
-        fstprm
-        fstluk
-        fstopenall
-        fstcloseall
+        fstinfx, fstinl, fstprm, fstluk, fstopenall, fstcloseall
+
     """
     return fstinfx(-2, iunit, datev, etiket, ip1, ip2, ip3, typvar, nomvar)
 
 
 def fstinfx(key, iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
             typvar=' ', nomvar=' '):
-    """
-    Locate the next record that matches the research keys
+    """Locate the next record that matches the search keys.
     
-    Only provided parameters with value different than default
-    are used as selection criteria
-    The search begins at the position given by key/handle
-    obtained with fstinf or fstinl, ...
+    Only provided parameters with value different than default are
+    used as selection criteria. The search begins at the position
+    given by key/handle obtained with fstinf or fstinl, ...
 
     recmatch = fstinfx(key, iunit, ... )
 
     Args:
         key     : record key/handle of the search start position
-                  (int or dict) if dict, must have key['key']
+            (int or dict) if dict, must have key['key']
         iunit   : unit number associated to the file
-                  obtained with fnom+fstouv
+            obtained with fnom+fstouv
         datev   : valid date
         etiket  : label
         ip1     : vertical level
@@ -941,12 +939,15 @@ def fstinfx(key, iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
         ip3     : user defined identifier
         typvar  : type of field
         nomvar  : variable name
+
     Returns:
-        None if no matching record, else:
+        None if no matching record, else::
+
         {
             'key'   : key,       # key/handle of the 1st matching record
             'shape' : (ni, nj, nk) # dimensions of the field
         }
+
     Raises:
         TypeError  on wrong input arg types
         ValueError on invalid input arg value
@@ -977,6 +978,7 @@ def fstinfx(key, iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
         fstluk
         fstopenall
         fstcloseall
+
     """
     if isinstance(key, dict):
        key = key['key']
@@ -1145,12 +1147,15 @@ def fstlir(iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
                   See: http://docs.scipy.org/doc/numpy/user/basics.types.html
         rank    : try to return an array with the specified rank
         dataArray (ndarray): (optional) allocated array where to put the data 
+
     Returns:
-        None if no matching record, else:
+        None if no matching record, else::
+
         {
             'd'   : data,       # record data as a numpy.ndarray
             ...                 # same params list as fstprm
         }
+
      Raises:
         TypeError  on wrong input arg types
         ValueError on invalid input arg value
@@ -1217,11 +1222,13 @@ def fstlirx(key, iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
         rank    : try to return an array with the specified rank
         dataArray (ndarray): (optional) allocated array where to put the data 
     Returns:
-        None if no matching record, else:
+        None if no matching record, else::
+
         {
             'd'   : data,       # record data as a numpy.ndarray
             ...                 # same params list as fstprm
         }
+
      Raises:
         TypeError  on wrong input arg types
         ValueError on invalid input arg value
@@ -1277,12 +1284,15 @@ def fstlis(iunit, dtype=None, rank=None, dataArray=None):
                   See: http://docs.scipy.org/doc/numpy/user/basics.types.html
         rank    : try to return an array with the specified rank
         dataArray (ndarray): (optional) allocated array where to put the data 
+
     Returns:
-        None if no matching record, else:
+        None if no matching record, else::
+
         {
             'd'   : data,       # record data as a numpy.ndarray
             ...                 # same params list as fstprm
         }
+
      Raises:
         TypeError  on wrong input arg types
         ValueError on invalid input arg value
@@ -1414,11 +1424,14 @@ def fstluk(key, dtype=None, rank=None, dataArray=None):
                 See: http://docs.scipy.org/doc/numpy/user/basics.types.html
         rank  : try to return an array with the specified rank
         dataArray (ndarray): (optional) allocated array where to put the data 
-    Returns:
+
+    Returns::
+
         {
             'd'   : data,       # record data as a numpy.ndarray, FORTRAN order
             ...                 # same params list as fstprm
         }
+
     Raises:
         TypeError  on wrong input arg types
         ValueError on invalid input arg value
@@ -1613,19 +1626,17 @@ def fstopt(optName, optValue, setOget=_rc.FSTOP_SET):
                    or one of these constants:
                    FSTOP_MSGLVL, FSTOP_TOLRNC, FSTOP_PRINTOPT, FSTOP_TURBOCOMP
         optValue : value to be set (int or string)
-                   or one of these constants:
-                   for optName=FSTOP_MSGLVL:
-                      FSTOPI_MSG_DEBUG,   FSTOPI_MSG_INFO,  FSTOPI_MSG_WARNING,
-                      FSTOPI_MSG_ERROR,   FSTOPI_MSG_FATAL, FSTOPI_MSG_SYSTEM,
-                      FSTOPI_MSG_CATAST
-                   for optName=FSTOP_TOLRNC:
-                      FSTOPI_TOL_NONE,    FSTOPI_TOL_DEBUG, FSTOPI_TOL_INFO,
-                      FSTOPI_TOL_WARNING, FSTOPI_TOL_ERROR, FSTOPI_TOL_FATAL
-                   for optName=FSTOP_TURBOCOMP:
-                      FSTOPS_TURBO_FAST, FSTOPS_TURBO_BEST
-        setOget  : define mode, set or print/get
-                   one of these constants: FSTOP_SET, FSTOP_GET
-                   default: set mode
+            or one of these constants:
+            for optName=FSTOP_MSGLVL: FSTOPI_MSG_DEBUG, FSTOPI_MSG_INFO,
+            FSTOPI_MSG_WARNING, FSTOPI_MSG_ERROR, FSTOPI_MSG_FATAL,
+            FSTOPI_MSG_SYSTEM, FSTOPI_MSG_CATAST
+            for optName=FSTOP_TOLRNC: FSTOPI_TOL_NONE, FSTOPI_TOL_DEBUG,
+            FSTOPI_TOL_INFO, FSTOPI_TOL_WARNING, FSTOPI_TOL_ERROR,
+            FSTOPI_TOL_FATAL
+            for optName=FSTOP_TURBOCOMP: FSTOPS_TURBO_FAST, FSTOPS_TURBO_BEST
+        setOget: define mode, set or print/get
+            one of these constants: FSTOP_SET, FSTOP_GET
+            default: set mode
     Returns:
         None
     Raises:
@@ -1715,15 +1726,14 @@ def fstprm(key):
         key : positioning information to the record,
               obtained with fstinf or fstinl, ...
     Returns:
-        {
-            'key'   : key,       # key/handle of the record
-            'shape' : (ni, nj, nk) # dimensions of the field
-            'dateo' : date time stamp
-            'datev' : date of validity (dateo+ deet * npas)
+        {'key' : key,       # key/handle of the record
+         'shape' : (ni, nj, nk) # dimensions of the field
+         'dateo' : date time stamp
+         'datev' : date of validity (dateo+ deet * npas)
                       Will be set to '-1' if dateo invalid
-            'deet'  : length of a time step in seconds
-            'npas'  : time step number
-            'ni'    : first dimension of the data field
+         'deet'  : length of a time step in seconds
+         'npas'  : time step number
+         'ni'    : first dimension of the data field
             'nj'    : second dimension of the data field
             'nk'    : third dimension of the data field
             'nbits' : number of bits kept for the elements of the field
@@ -2345,47 +2355,53 @@ def ip3_val(level, kind):
 
 def convertIp(mode, v, k=0):
     """
-    Codage/Decodage P, kind <-> IP pour IP1, IP2, IP3
+    Code/decode P, kind ↔ IP for IP1, IP2, IP3
     
-    ip        = convertIp(mode, p, kind) #if mode > 0
-    (p, kind) = convertIp(mode, ip)      #if mode <= 0
+    If mode > 0: ip = convertIp(mode, p, kind)
+
+    If mode ≤ 0: (p, kind) = convertIp(mode, ip)
     
     Args:
-        ip   : Encoded value (int)
-        p    : Real Value (float)
-        kind : Level encoding kind/code (int)
-        mode : Conversion mode (int)
-        
-        kind can take the following values
-        0, p est en hauteur (m) rel. au niveau de la mer (-20, 000 -> 100, 000)
-        1, p est en sigma                                (0.0 -> 1.0)
-        2, p est en pression (mb)                        (0 -> 1100)
-        3, p est un code arbitraire                      (-4.8e8 -> 1.0e10)
-        4, p est en hauteur (M) rel. au niveau du sol    (-20, 000 -> 100, 000)
-        5, p est en coordonnee hybride                   (0.0 -> 1.0)
-        6, p est en coordonnee theta                     (1 -> 200, 000)
-        10, p represente le temps en heure               (0.0 -> 1.0e10)
-        15, reserve (entiers)                                   
-        17, p represente l'indice x de la matrice de conversion (1.0 -> 1.0e10)
-            (partage avec kind=1 a cause du range exclusif
-        21, p est en metres-pression                     (0 -> 1, 000, 000)
-                                                         fact=1e4
-            (partage avec kind=5 a cause du range exclusif)
+        ip (int): Encoded value
+
+        p (float): Real Value
+
+        kind (int): Level encoding kind/code
+
+        Can take the following values:
+
+        - 0, p is height (m) above sea level (-20 000 → 100 000)
+        - 1, p is sigma (0.0 → 1.0)
+        - 2, p is pressure (mb) (0 → 1100)
+        - 3, p is an arbitrary code (-4.8e8 → 1.0e10)
+        - 4, p est en hauteur (M) rel. au niveau du sol (-20, 000 → 100, 000)
+        - 5, p est en coordonnee hybride (0.0 → 1.0)
+        - 6, p est en coordonnee theta (1 → 200, 000)
+        - 10, p represente le temps en heure (0.0 → 1.0e10)
+        - 15, reserve (entiers)
+        - 17, p represente l'indice x de la matrice de conversion (1.0 → 1.0e10)(partagé avec kind=1 a cause du range exclusif
+        - 21, p est en metres-pression (0 → 1, 000, 000) fact=1e4 (partagé avec kind=5 a cause du range exclusif)
             
-        mode can take the following values
-        -1, de IP -->  P
-        0, forcer conversion pour ip a 31 bits
-        (default = ip a 15 bits) (appel d'initialisation)
-        +1, de P  --> IP
-        +2, de P  --> IP en mode NEWSTYLE force a true
-        +3, de P  --> IP en mode NEWSTYLE force a false
+        mode (int): Conversion mode
+        Can take the following values
+
+        - -1, IP to P
+        - 0, force conversion for ip to 31 bits (default = ip has 15 bits) (appel d'initialisation)
+        - 1, P to IP
+        - 2, P to IP with NEWSTYLE forced to true
+        - 3, P to IP with NEWSTYLE forced to false
+
     Returns:
         int, ip Encoded value, if mode > 0
+
         (float, int), (pvalue, kind) Decoded value, if mode <= 0
+
     Raises:
-        TypeError  on wrong input arg types
-        ValueError on invalid input arg value
-        FSTDError  on any other error       
+        TypeError: wrong input arg types
+
+        ValueError: on invalid input arg value
+
+        FSTDError: any other error       
 
     Example:
 
@@ -2395,14 +2411,8 @@ def convertIp(mode, v, k=0):
     >>> (val, kind) = rmn.convertIp(rmn.CONVIP_DECODE, ip1)
 
     See Also:
-        ip1_val
-        ip2_val
-        ip3_val
-        EncodeIp
-        DecodeIp
-        convertIPtoPK
-        convertPKtoIP
-        kindToString
+        `ip1_val`, `ip2_val`, `ip3_val`, `EncodeIp`, `DecodeIp`,
+        `convertIPtoPK`, `convertPKtoIP`, `kindToString`
         rpnpy.librmn.const
     """
     (cip, cp, ckind) = (_ct.c_int(), _ct.c_float(), _ct.c_int())
@@ -2441,51 +2451,45 @@ def convertIPtoPK(ip1, ip2, ip3):
     (rp1, rp2, rp3) = convertIPtoPK(ip1, ip2, ip3)
 
     Args:
-        ip1   : vertical level (int)
-        ip2   : forecast hour (int)
-        ip3   : user defined identifier (int)
-    Returns:
-        rp1    : decoded ip1 (FLOAT_IP)
-                 a level (or a pair of levels) in the atmosphere
-        rp2    : decoded ip2 (FLOAT_IP)
-                 a time (or a pair of times)
-        rp3    : decoded ip3 (FLOAT_IP)
-                 may contain anything
-    Raises:
-        TypeError  on wrong input arg types
-        ValueError on invalid input arg value
-        FSTDError  when provided values cannot be converted
+        ip1 (int): vertical level
+        ip2 (int): forecast hour
+        ip3 (int): user-defined identifier
 
-    Example:
+    Returns:
+        rp1 (FLOAT_IP): decoded ip1
+            a level (or a pair of levels) in the atmosphere
+        rp2 (FLOAT_IP): decoded ip2
+            a time (or a pair of times)
+        rp3 (FLOAT_IP): decoded ip3
+            may contain anything
+
+    Raises:
+        TypeError: wrong input arg types
+        ValueError: invalid input arg value
+        FSTDError: provided values cannot be converted
+
+    Examples:
+
+    Encode 500mb at 12h
 
     >>> import rpnpy.librmn.all as rmn
-    >>> 
-    >>> # Encode 500mb at 12h,
     >>> # these ip1, ip2, ip3 can be used as search keys int fstinf, fstlir, ...
     >>> pk1a = rmn.FLOAT_IP(500., 500., rmn.LEVEL_KIND_PMB)
-    >>> pk2a = rmn.FLOAT_IP( 12.,  12., rmn.TIME_KIND_HR)
-    >>> pk3a = rmn.FLOAT_IP(  0.,   0., rmn.KIND_ARBITRARY)
+    >>> pk2a = rmn.FLOAT_IP( 12., 12., rmn.TIME_KIND_HR)
+    >>> pk3a = rmn.FLOAT_IP(0., 0., rmn.KIND_ARBITRARY)
     >>> (ip1, ip2, ip3) = rmn.convertPKtoIP(pk1a, pk2a, pk3a)
-    >>> 
-    >>> # Decode and print
+
+    Decode and print
+
     >>> (pk1, pk2, pk3) = rmn.convertIPtoPK(ip1, ip2, ip3)
-    >>> print("# Level v1={0}, v2={1}, type={2}"\
-              .format(pk1.v1, pk1.v2, rmn.kindToString(pk1.kind)))
-    # Level v1=500.0, v2=500.0, type=mb
-    >>> print("# Time v1={0}, v2={1}, type={2}"\
-              .format(pk2.v1, pk2.v2, rmn.kindToString(pk2.kind)))
-    # Time v1=12.0, v2=12.0, type= H
+    >>> print("Level v1={0}, v2={1}, type={2}".format(pk1.v1, pk1.v2, rmn.kindToString(pk1.kind)))
+    Level v1=500.0, v2=500.0, type=mb
+    >>> print("Time v1={0}, v2={1}, type={2}".format(pk2.v1, pk2.v2, rmn.kindToString(pk2.kind)))
+    Time v1=12.0, v2=12.0, type= H
 
     See Also:
-        ip1_val
-        ip2_val
-        ip3_val
-        EncodeIp
-        DecodeIp
-        convertIp
-        convertPKtoIP
-        kindToString
-        rpnpy.librmn.const
+        `ip1_val`, `ip2_val`, `ip3_val`, `EncodeIp`, `DecodeIp`, `convertIp`,
+        `convertPKtoIP`, `kindToString`, rpnpy.librmn.const
     """
     if type(ip1) != int or type(ip2) != int or type(ip3) != int:
         raise TypeError("convertIPtoPK: Expecting ip123 to be of type int, " +
@@ -2578,51 +2582,48 @@ def EncodeIp(rp1, rp2, rp3):
     (ip1, ip2, ip3) = EncodeIp(rp1, rp2, rp3)
 
     Args:
-        rp1    : vertical level, real values & kind (FLOAT_IP)
-                 a level (or a pair of levels) in the atmosphere
-        rp2    : forecast hour, real values & kind (FLOAT_IP)
-                 a time (or a pair of times)
-        rp3    : user defined identifier, real values & kind (FLOAT_IP)
-                 may contain anything, RP3.hi will be ignored
-                 (if rp1 or rp2 contains a pair, rp3 is ignored)
+        rp1 (FLOAT_IP): vertical level, real values & kind
+            a level (or a pair of levels) in the atmosphere
+        rp2 (FLOAT_IP): forecast hour, real values & kind
+            a time (or a pair of times)
+        rp3 (FLOAT_IP): user defined identifier, real values & kind
+            may contain anything, RP3.hi will be ignored (if rp1 or rp2
+            contains a pair, rp3 is ignored)
     Returns:
-        ip1   : encoded rp1, vertical level (int)
-        ip2   : encoded rp2, forecast hour (int)
-        ip3   : encoded rp3, user defined identifier (int)
-    Raises:
-        TypeError  on wrong input arg types
-        ValueError on invalid input arg value
-        FSTDError  when provided values cannot be converted
+        ip1 (int): encoded rp1, vertical level
 
-    Example:
+        ip2 (int): encoded rp2, forecast hour
+
+        ip3 (int): encoded rp3, user defined identifier
+    Raises:
+        TypeError: wrong input arg types
+
+        ValueError: invalid input arg value
+
+        FSTDError: provided values cannot be converted
+
+    Examples:
+
+    Encode 500mb at 12h
 
     >>> import rpnpy.librmn.all as rmn
-    >>> 
-    >>> # Encode 500mb at 12h,
     >>> # these ip1, ip2, ip3 can be used as search keys int fstinf, fstlir, ...
     >>> rp1a = rmn.FLOAT_IP(500., 500., rmn.LEVEL_KIND_PMB)
-    >>> rp2a = rmn.FLOAT_IP( 12.,  12., rmn.TIME_KIND_HR)
-    >>> rp3a = rmn.FLOAT_IP(  0.,   0., rmn.KIND_ARBITRARY)
+    >>> rp2a = rmn.FLOAT_IP( 12., 12., rmn.TIME_KIND_HR)
+    >>> rp3a = rmn.FLOAT_IP(  0., 0., rmn.KIND_ARBITRARY)
     >>> (ip1, ip2, ip3) = rmn.EncodeIp(rp1a, rp2a, rp3a)
-    >>> 
-    >>> # Decode and print
+
+    Decode and print
+
     >>> (rp1, rp2, rp3) = rmn.DecodeIp(ip1, ip2, ip3)
-    >>> print("# Level v1={0}, v2={1}, type={2}"\
-              .format(rp1.v1, rp1.v2, rmn.kindToString(rp1.kind)))
-    # Level v1=500.0, v2=500.0, type=mb
-    >>> print("# Time v1={0}, v2={1}, type={2}"\
-              .format(rp2.v1, rp2.v2, rmn.kindToString(rp2.kind)))
-    # Time v1=12.0, v2=12.0, type= H
+    >>> print("Level v1={0}, v2={1}, type={2}".format(rp1.v1, rp1.v2, rmn.kindToString(rp1.kind)))
+    Level v1=500.0, v2=500.0, type=mb
+    >>> print("# Time v1={0}, v2={1}, type={2}".format(rp2.v1, rp2.v2, rmn.kindToString(rp2.kind)))
+    Time v1=12.0, v2=12.0, type= H
 
     See Also:
-        DecodeIp
-        ip1_val
-        ip2_val
-        ip3_val
-        convertIp
-        convertIPtoPK
-        convertPKtoIP
-        kindToString
+        `DecodeIp`, `ip1_val`, `ip2_val`, `ip3_val`, `convertIp`,
+        `convertIPtoPK`, `convertPKtoIP`, `kindToString`,
         rpnpy.librmn.const
     """
     rp1 = listToFLOATIP(rp1)
@@ -2644,39 +2645,36 @@ def DecodeIp(ip1, ip2, ip3):
     (rp1, rp2, rp3) = DecodeIp(ip1, ip2, ip3)
     
     Args:
-        ip1   : vertical level (int)
-        ip2   : forecast hour (int)
-        ip3   : user defined identifier (int)
+        ip1 (int): vertical level
+        ip2 (int): forecast hour
+        ip3 (int): user defined identifier
+
     Returns:
-        rp1    : decoded ip1 (FLOAT_IP)
-                 a level (or a pair of levels) in the atmosphere
-        rp2    : decoded ip2 (FLOAT_IP)
-                 a time (or a pair of times)
-        rp3    : decoded ip3 (FLOAT_IP)
-                 may contain anything
+        rp1 (FLOAT_IP): decoded ip1
+            a level (or a pair of levels) in the atmosphere
+        rp2 (FLOAT_IP): decoded ip2
+            a time (or a pair of times)
+        rp3 (FLOAT_IP): decoded ip3
+            may contain anything
+
     Raises:
-        TypeError  on wrong input arg types
-        ValueError on invalid input arg value
-        FSTDError  when provided values cannot be converted
+        TypeError: wrong input arg types
+
+        ValueError: invalid input arg value
+
+        FSTDError: provided values cannot be converted
 
     Example:
 
     >>> import rpnpy.librmn.all as rmn
     >>> (ip1, ip2, ip3) = (6441456, 176280768, 66060288)
     >>> (rp1, rp2, rp3) = rmn.DecodeIp(ip1, ip2, ip3)
-    >>> print("# Level v1={0}, v2={1}, type={2}"\
-              .format(rp1.v1, rp1.v2, rmn.kindToString(rp1.kind)))
-    # Level v1=1500.0, v2=1500.0, type= m
+    >>> print("Level v1={0}, v2={1}, type={2}".format(rp1.v1, rp1.v2, rmn.kindToString(rp1.kind)))
+    Level v1=1500.0, v2=1500.0, type= m
 
     See Also:
-        `EncodeIp`
-        `ip1_val`
-        `ip2_val`
-        `ip3_val`
-        `convertIp`
-        `convertIPtoPK`
-        `convertPKtoIP`
-        `kindToString`
+        `EncodeIp`, `ip1_val`, `ip2_val`, `ip3_val`, `convertIp`,
+        `convertIPtoPK`, `convertPKtoIP`, `kindToString`
         rpnpy.librmn.const
     """
     (rp1, rp2, rp3) = (_rp.FLOAT_IP(0., 0., 0), _rp.FLOAT_IP(0., 0., 0),
