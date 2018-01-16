@@ -14,6 +14,9 @@ RPNPy Reference
 .. automodule:: rpnpy.librmn.grids
    :members:
 
+.. automodule:: rpnpy.librmn.interp
+   :members:
+
 Indices and tables
 ==================
 
