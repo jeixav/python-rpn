@@ -10,15 +10,19 @@ Module librmn.fstd98 contains python wrapper to main librmn's fstd98,
 convip C functions along with helper functions
 
 Notes:
-    The functions described below are a very close ''port'' from the original
-    [[librmn]]'s [[Librmn/FSTDfunctions|FSTD]] package.<br>
-    You may want to refer to the [[Librmn/FSTDfunctions|FSTD]]
+    The functions described below are a very close ''port'' from the
+    original `librmn
+    <http://collaboration.cmc.ec.gc.ca/science/si/eng/si/libraries/>`_'s
+    `FSTD
+    <http://collaboration.cmc.ec.gc.ca/science/si/eng/si/libraries/rmnlib/fstd89/index.html>`_
+    package. You may want to refer to the `FSTD
+    <http://collaboration.cmc.ec.gc.ca/science/si/eng/si/libraries/rmnlib/fstd89/index.html>`_
     documentation for more details.
 
 See Also:
     rpnpy.librmn.base
-    rpnpy.librmn.interp
-    rpnpy.librmn.grids
+    `rpnpy.librmn.interp`
+    `rpnpy.librmn.grids`
     rpnpy.librmn.const
 """
 
