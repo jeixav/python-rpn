@@ -6,11 +6,13 @@
 # Copyright: LGPL 2.1
 
 """
-Python High Level Interface for BUPR files.
+Python High Level Interface for [[BURP]] files.
 
 See Also:
     rpnpy.librmn.burp
     rpnpy.librmn.burp_const
+    rpnpy.burpc.base
+    rpnpy.burpc.brpobj
     rpnpy.librmn.proto_burp
     rpnpy.librmn.base
     rpnpy.librmn.fstd98
@@ -52,7 +54,7 @@ class BurpFile:
 
     myburpfile = BurpFile(fname, mode)
 
-    Args: 
+    Args:
         fname : burp file name
         mode  : I/O mode of file ('r'=read, 'w'=write, 'rw'=read or write)
     Raises:
@@ -104,7 +106,7 @@ class BurpFile:
         """
         Initializes BurpFile, checks if file exists and reads BURP data.
 
-        Args: 
+        Args:
             fname : burp file name
             mode  : I/O mode of file ('r'=read, 'w'=write, 'rw'=read or write)
         Raises:
@@ -151,7 +153,7 @@ class BurpFile:
         without having to fully open the file.
 
         Returns:
-            (nrep, rep_max), tuple where: 
+            (nrep, rep_max), tuple where:
                nrep    : number of reports in the file
                rep_max : length of longest report in the file
         """
@@ -234,7 +236,7 @@ class BurpFile:
         # loop over reports
         handle = 0
         buf    = nbuf
-        for irep in xrange(nrep):
+        for irep in range(nrep):
 
             # get next report and load data into buffer
             handle = _brp.mrfloc(unit, handle)
@@ -273,7 +275,7 @@ class BurpFile:
                 getattr(self, attr)[irep] = _np.empty((rhp['nblk'], ), dtype=object)
 
             # loop over blocks
-            for iblk in xrange(rhp['nblk']):
+            for iblk in range(rhp['nblk']):
 
                 # get block header
                 bhp = _brp.mrbprm(buf, iblk+1)
@@ -302,15 +304,15 @@ class BurpFile:
                     if warn:
                         _warnings.warn("Unrecognized data type value of %i. Unconverted table values will be returned." % bhp['datyp'])
                         warn = False
-                
+
                 # convert CMC codes to BUFR codes
                 self.elements[irep][iblk] = _brp.mrbdcl(bdata['cmcids'])
-                
+
                 #TODO: since arrays are now allocated Fortran style,
                 #      should we do a transpose?
                 self.rval[irep][iblk] = rval
 
-                # check that the element arrays are the correct dimensions
+                # check that the element arrays have the correct dimensions
                 if _np.any(self.elements[irep][iblk].shape != (self.nelements[irep][iblk])):
                     raise _brp.BurpError("elements array does not have the correct dimensions.")
                 if _np.any(self.rval[irep][iblk].shape != (self.nelements[irep][iblk], self.nlev[irep][iblk], self.nt[irep][iblk])):
@@ -330,7 +332,7 @@ class BurpFile:
     def write_burpfile(self):
         """
         Writes BurpFile instance to a BURP file.
-        
+
         Returns:
             None
         Raises:
@@ -363,42 +365,38 @@ class BurpFile:
         unit = _brp.burp_open(self.fname, _rbc.BURP_MODE_CREATE)
 
         # loop over reports
-        for irep in xrange(self.nrep):
+        for irep in range(self.nrep):
 
             # write report header
-            _brp.mrbini(unit, buf, itime[irep], self.flgs[irep], self.stnids[irep], self.codtyp[irep], 
-                        ilat[irep], ilon[irep], self.dx[irep], self.dy[irep], self.alt[irep], 
-                        self.delay[irep], idate[irep], self.rs[irep], self.runn[irep], self.sup[irep], 
+            _brp.mrbini(unit, buf, itime[irep], self.flgs[irep], self.stnids[irep], self.codtyp[irep],
+                        ilat[irep], ilon[irep], self.dx[irep], self.dy[irep], self.alt[irep],
+                        self.delay[irep], idate[irep], self.rs[irep], self.runn[irep], self.sup[irep],
                         nsup, self.xaux[irep], nxaux)
 
-            for iblk in xrange(self.nblk[irep]):
+            for iblk in range(self.nblk[irep]):
 
                 nele = self.nelements[irep][iblk]
                 nlev = self.nlev[irep][iblk]
                 nt = self.nt[irep][iblk]
 
                 # convert BUFR codes to CMC codes
-                lstele = _np.empty((nele, ), dtype=_np.int32)
-                _brp.mrbcol(self.elements[irep][iblk], lstele, nele)
+                cmcids = _brp.mrbcol(self.elements[irep][iblk])
 
                 # convert real values to integer table values
-                rval = _np.ravel(self.rval[irep][iblk], order='F')
-                tblval = _np.round(rval).astype(_np.int32)
                 if self.datyp[irep][iblk] < 5:
-                    _brp.mrbcvt(lstele, tblval, rval, nele, nlev, nt, _rbc.MRBCVT_ENCODE)
-                    tbl_out = tblval
-                elif self.datyp[irep][iblk] < 7:
-                    tbl_out = rval
+                    tblval = _brp.mrbcvt_encode(cmcids, self.rval[irep][iblk])
+                    tblval = _np.ravel(tblval, order='F')
                 else:
-                    if warn:
+                    rval = _np.ravel(self.rval[irep][iblk], order='F')
+                    tblval = _np.round(rval).astype(_np.int32)
+                    if self.datyp[irep][iblk] > 6 and warn:
                         _warnings.warn("Unrecognized data type value of %i. Unconverted table values will be written." %  self.datyp[irep][iblk])
                         warn = False
-                    tbl_out = tblval
 
                 # add block to report
-                _brp.mrbadd(buf, _ct.pointer(_ct.c_int(iblk+1)), nele, nlev, nt, self.bfam[irep][iblk], self.bdesc[irep][iblk], 
-                            self.btyp[irep][iblk], self.nbit[irep][iblk], _ct.pointer(_ct.c_int(self.bit0[irep][iblk])), 
-                            self.datyp[irep][iblk], lstele, tbl_out)
+                _brp.mrbadd(buf, _ct.pointer(_ct.c_int(iblk+1)), nele, nlev, nt, self.bfam[irep][iblk], self.bdesc[irep][iblk],
+                            self.btyp[irep][iblk], self.nbit[irep][iblk], _ct.pointer(_ct.c_int(self.bit0[irep][iblk])),
+                            self.datyp[irep][iblk], cmcids, tblval)
 
 
             # write report
@@ -463,11 +461,11 @@ class BurpFile:
             iele = element-1
             outdata = []
 
-            for irep in xrange(self.nrep):
+            for irep in range(self.nrep):
 
                 if self.nblk[irep]>iblk:
                     if self.nelements[irep][block-1]>iele and self.nt[irep][iblk]>it:
-                        outdata.append( self.rval[irep][iblk][iele][it] )
+                        outdata.append( self.rval[irep][iblk][iele,:,it] )
                         if self.nlev[irep][iblk]>nlev_max:
                             nlev_max = self.nlev[irep][iblk]
                     else:
@@ -480,7 +478,7 @@ class BurpFile:
 
             outdata = []
 
-            for irep in xrange(self.nrep):
+            for irep in range(self.nrep):
 
                 # find all block, element pairs for the BURP code
                 iele_code = [ _np.where(elem==code)[0] for elem in self.elements[irep] ]
@@ -517,7 +515,7 @@ class BurpFile:
 
                 if len(iblk)>0:
                     if self.nt[irep][iblk[0]]>it:
-                        outdata.append( self.rval[irep][iblk[0]][iele[0]][it] )
+                        outdata.append( self.rval[irep][iblk[0]][iele[0],:,it] )
                         if self.nlev[irep][iblk[0]]>nlev_max:
                             nlev_max = self.nlev[irep][iblk[0]]
                     else:
@@ -556,7 +554,7 @@ class BurpFile:
         assert fmt in ('datetime', 'string', 'int', 'unix'), "Invalid format \'%s\'" % fmt
 
         dts = []
-        for i in xrange(self.nrep):
+        for i in range(self.nrep):
 
             d = _datetime(self.year[i], self.month[i], self.day[i], self.hour[i], self.minute[i])
 
@@ -610,7 +608,7 @@ def copy_burp(brp_in, brp_out):
     Copies all file, report, block, and code information from the
     input BurpFile to the output BurpFile, except does not copy over
     filename or mode.
-    
+
     Args:
         brp_in  : BurpFile instance to copy data from
         brp_out : BurpFile instance to copy data to
@@ -625,7 +623,7 @@ def copy_burp(brp_in, brp_out):
 
 def plot_burp(bf, code=None, cval=None, ax=None, level=0, mask=None, projection='cyl', cbar_opt={}, vals_opt={}, dparallel=30., dmeridian=60., fontsize=20, **kwargs):
     """
-    Plots a BURP file. Will plot BUFR code if specified. Only plots a single level, 
+    Plots a BURP file. Will plot BUFR code if specified. Only plots a single level,
     which can be specified by the optional argument. Additional arguments not listed
     below will be passes to Basemap.scatter.
 

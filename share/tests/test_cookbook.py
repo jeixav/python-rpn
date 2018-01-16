@@ -26,6 +26,7 @@ Here we load all the librmn functions and constants into a python object. The na
 
   python
   >>> import rpnpy.librmn.all as rmn
+  >>> import rpnpy.vgd.all as vgd
 
 See Also:
   * RPNpy Tutorial
@@ -347,7 +348,7 @@ class rpnpyCookbook(unittest.TestCase):
         # Open file
         fdate    = datetime.date.today().strftime('%Y%m%d') + '00_048'
         CMCGRIDF = os.getenv('CMCGRIDF').strip()
-        fileName  = os.path.join(CMCGRIDF, 'prog', 'regpres', fdate)
+        fileName  = os.path.join(CMCGRIDF, 'prog', 'regeta', fdate)
         try:
             fileId = rmn.fstopenall(fileName, rmn.FST_RO)
         except:
@@ -361,12 +362,14 @@ class rpnpyCookbook(unittest.TestCase):
             # Get Some info about the vgrid
             vkind    = vgd.vgd_get(v, 'KIND')
             vver     = vgd.vgd_get(v, 'VERS')
-            ip1diagt = vgd.vgd_get(v, 'DIPT')
             tlvl     = vgd.vgd_get(v, 'VIPT')
-            
-            VGD_KIND_VER_INV = dict((v, k) for k, v in vgd.VGD_KIND_VER.iteritems())
-            vtype = VGD_KIND_VER_INV[(vkind,vver)]
+            try:
+                ip1diagt = vgd.vgd_get(v, 'DIPT')
+            except:
+                ip1diagt = 0
             (ldiagval, ldiagkind) = rmn.convertIp(rmn.CONVIP_DECODE, ip1diagt)
+            VGD_KIND_VER_INV = dict((v, k) for k, v in vgd.VGD_KIND_VER.items())
+            vtype = VGD_KIND_VER_INV[(vkind,vver)]
             print("CB14: Found vgrid type=%s (kind=%d, vers=%d) with %d levels and diag level=%7.2f%s (ip1=%d)" %
                 (vtype, vkind, vver, len(tlvl), ldiagval, rmn.kindToString(ldiagkind), ip1diagt))
         except:
@@ -409,7 +412,7 @@ class rpnpyCookbook(unittest.TestCase):
         # Open file
         fdate     = datetime.date.today().strftime('%Y%m%d') + '00_048'
         CMCGRIDF  = os.getenv('CMCGRIDF').strip()
-        fileName  = os.path.join(CMCGRIDF, 'prog', 'regpres', fdate)
+        fileName  = os.path.join(CMCGRIDF, 'prog', 'regeta', fdate)
         try:
             fileId = rmn.fstopenall(fileName, rmn.FST_RO)
         except:
@@ -470,7 +473,7 @@ class rpnpyCookbook(unittest.TestCase):
         # Print a profile of TT and stats by level
         (i1, j1) = (rshape[0]//2, rshape[1]//2)
         print("CB14b: The TT profile at point (%d, %d) is:" % (i1, j1))
-        for k in xrange(rshape[2]):
+        for k in range(rshape[2]):
             ip1 = r3d['ip1list'][k]
             (ldiagval, ldiagkind) = rmn.convertIp(rmn.CONVIP_DECODE, ip1)
             print("CB14b: TT(%d, %d, %7.2f %s) = %6.1f C [mean=%6.1f, std=%6.1f, min=%6.1f, max=%6.1f]" %
@@ -505,7 +508,7 @@ class rpnpyCookbook(unittest.TestCase):
         r3d.update({'vgd':v, 'ip1list':[x[0] for x in tlvlkeys], 'shape':rshape, 'nk':rshape[2]})
         (i1, j1) = (rshape[0]//2, rshape[1]//2)
         print("CB14bqd: The TT profile at point (%d, %d) is:" % (i1, j1))
-        for k in xrange(rshape[2]):
+        for k in range(rshape[2]):
             (ldiagval, ldiagkind) = rmn.convertIp(rmn.CONVIP_DECODE, r3d['ip1list'][k])
             print("CB14bqd: TT(%d, %d, %7.2f %s) = %6.1f C [mean=%6.1f, std=%6.1f, min=%6.1f, max=%6.1f]" %
                   (i1, j1, ldiagval, rmn.kindToString(ldiagkind), r3d['d'][i1,j1,k],

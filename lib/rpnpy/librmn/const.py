@@ -32,7 +32,7 @@ import numpy  as _np
 #=== primitives ===
 #<source lang=python>
 ## Python dict with wkoffit file type codes
-WKOFFIT_TYPE_LIST = { #TODO:
+WKOFFIT_TYPE_LIST = {
     'INEXISTANT' : -3,
     'VIDE' : -2,
     'INCONNU' : -1,
@@ -248,6 +248,7 @@ FST_DATYP2NUMPY_LIST64 = { #TODO: review
     #7: _np.uint8,  # character string
     8: _np.complex128  # complex IEEE
 }
+FST_DATYP2NUMPY_LIST_ITEMS = [x for x in FST_DATYP2NUMPY_LIST.items()] + [x for x in FST_DATYP2NUMPY_LIST64.items()]
 #</source>
 
 #=== Convip / Convert IP ===

@@ -7,7 +7,7 @@
 
 #TODO: add ax, ax optional arg to ZE, dE, ZL, dL, U
 #TODO: add fucntions to convert between Z, # and Y grids
-#TODO: add fucntions to define YE, YL grids
+#TODO: add fucntions to define YE grids
 
 """
 Librmn Fstd grid helper functions
@@ -32,15 +32,17 @@ from rpnpy.librmn import fstd98 as _rf
 from rpnpy.librmn import interp as _ri
 from rpnpy.utils  import llacar as _ll
 from rpnpy.librmn import RMNError
+from rpnpy import integer_types as _integer_types
 
-_list2ftnf32 = lambda x: x if isinstance(x, _np.ndarray) else _np.asfortranarray(x, dtype=_np.float32)
+_list2ftnf32 = lambda x: x if isinstance(x, _np.ndarray) \
+                           else _np.asfortranarray(x, dtype=_np.float32)
 
 def decodeIG2dict(grtyp, ig1, ig2, ig3, ig4):
     """
     Decode encode grid values into a dict with meaningful labels
-    
+
     params = decodeIG2dict(grtyp, ig1, ig2, ig3, ig4)
-    
+
     Args:
         grtyp  : type of geographical projection
                  (one of 'A', 'B', 'E', 'G', 'L', 'N', 'S')
@@ -77,7 +79,7 @@ def decodeIG2dict(grtyp, ig1, ig2, ig3, ig4):
     >>> (ig1, ig2, ig3, ig4) = rmn.cxgaig(grtyp,lat0, lon0, dlat, dlon)
     >>> # Decode Grid parameters to generix xg1-4 values
     >>> params = rmn.decodeIG2dict(grtyp, ig1, ig2, ig3, ig4)
-    >>> if ((params['xg1'], params['xg2'], params['xg3'], params['xg4']) != 
+    >>> if ((params['xg1'], params['xg2'], params['xg3'], params['xg4']) !=
     ...     (lat0, lon0, dlat, dlon)):
     ...     print("Problem decoding grid values.")
 
@@ -103,7 +105,7 @@ def decodeXG2dict(grtyp, xg1, xg2, xg3, xg4):
     Put decode grid values into a dict with meaningful labels
 
     params = decodeXG2dict(grtyp, xg1, xg2, xg3, xg4)
-    
+
     Args:
         grtyp  : type of geographical projection
                  (one of 'A', 'B', 'E', 'G', 'L', 'N', 'S')
@@ -185,7 +187,7 @@ def decodeXG2dict(grtyp, xg1, xg2, xg3, xg4):
             'd60'  : xg3,
             'dgrw' : xg4,
             'north' : (params['grtyp'] == 'N')
-            })        
+            })
     else:
         raise RMNError('decodeXG2dict: Grid type not yet supported {grtyp}'.format(**params))
     return params
@@ -199,7 +201,7 @@ def decodeGrid(gid):
     gridParams = decodeGrid(params)
 
     Args:
-        gid    (int) : ezscint grid-id 
+        gid    (int) : ezscint grid-id
         params (dict): mandatory dict element: 'id' ezscint grid-id (int)
     Returns:
         {
@@ -261,7 +263,7 @@ def decodeGrid(gid):
         rpnpy.librmn.interp.ezget_subgridids
     """
     params0 = {}
-    if isinstance(gid,dict):
+    if isinstance(gid, dict):
         try:
             params0 = gid
             gid = params0['id']
@@ -296,7 +298,7 @@ def decodeGrid(gid):
                 'ax'    : axes['ax'],
                 'ay'    : axes['ay']
                 })
-            
+
             if params['grtyp'] in ('Z', '#'):
                 #TODO: if L grid, account for lat0,lon0!=0, dlat,dlon!=1
                 (ni, nj) = (params['ni']-1, params['nj']-1)
@@ -307,16 +309,16 @@ def decodeGrid(gid):
                     'dlon' : float(axes['ax'][ni, 0] - axes['ax'][0, 0])/float(ni)
                     })
                 if params['grref'] == 'E':
-                    (params['rlat0'],params['rlon0']) = \
+                    (params['rlat0'], params['rlon0']) = \
                         (params['lat0'], params['lon0'])
                     (params['lat0'], params['lon0']) = \
                         egrid_rll2ll(params['xlat1'], params['xlon1'],
                                      params['xlat2'], params['xlon2'],
                                      params['rlat0'], params['rlon0'])
-                for k in ('lat0','lon0','dlat','dlon'):
+                for k in ('lat0', 'lon0', 'dlat', 'dlon'):
                     if k in params0.keys(): params[k] = params0[k]
 
-            if all([x in params0.keys() for x in ('ig1','ig2')]):
+            if all([x in params0.keys() for x in ('ig1', 'ig2')]):
                 params['tag1'] = params0['ig1']
                 params['tag2'] = params0['ig2']
             else:
@@ -325,27 +327,27 @@ def decodeGrid(gid):
             if 'ig3' in params0.keys() and params['grtyp'] != '#':
                 params['tag3'] = params0['ig3']
             (params['ig1'], params['ig2']) = (params['tag1'], params['tag2'])
-            
-            if params['grtyp'] in ('#'):
+
+            if params['grtyp'] in ('#', ):
                 (params['ig3'], params['ig4']) = (1, 1)
                 (params['lni'], params['lnj']) = (params['ni'], params['nj'])
                 params['lshape'] = params['shape']
-                for k in ('ig3','ig4'):
+                for k in ('ig3', 'ig4'):
                     if k in params0.keys(): params[k] = params0[k]
                 (params['i0'], params['j0']) = (params['ig3'], params['ig4'])
-                for k in ('i0','j0'):
+                for k in ('i0', 'j0'):
                     if k in params0.keys(): params[k] = params0[k]
-                if all([x in params0.keys() for x in ('ni','nj')]):
+                if all([x in params0.keys() for x in ('ni', 'nj')]):
                     params['lni'] = params0['ni']
                     params['lnj'] = params0['nj']
-                    params['lshape'] = (params['lni'],params['lnj'])
+                    params['lshape'] = (params['lni'], params['lnj'])
             else:
                 (params['ig3'], params['ig4']) = (params['tag3'], 0)
                 if 'ig4' in params0.keys(): params['ig4'] = params0['ig4']
 
         else:
             raise RMNError('decodeGrid: Grid type not yet supported {grtyp}({grref})'.format(**params))
-    elif params['grtyp'] in ('U'):
+    elif params['grtyp'] in ('U', ):
         params['nsubgrids'] = _ri.ezget_nsubgrids(gid)
         params['subgridid'] = _ri.ezget_subgridids(gid)
         params['subgrid'] = []
@@ -361,7 +363,7 @@ def decodeGrid(gid):
                                     params['xlat2'], params['xlon2'],
                                     params['subgrid'][0]['ax'],
                                     params['subgrid'][0]['ay'])
-        if all([x in params0.keys() for x in ('ig1','ig2')]):
+        if all([x in params0.keys() for x in ('ig1', 'ig2')]):
             params['tag1'] = params0['ig1']
             params['tag2'] = params0['ig2']
         else:
@@ -374,16 +376,16 @@ def decodeGrid(gid):
         if 'ig4' in params0.keys(): params['ig4'] = params0['ig4']
     else:
         raise RMNError('decodeGrid: Grid type not yet supported {grtyp}({grref})'.format(**params))
-        
+
     return params
 
 
 def getIgTags(params):
     """
     Use grid params and CRC to define 2 grid tags
-    
+
     (tag1, tag2) = setIgTags(params)
-    
+
     Args:
         params     : grid parameters given as a dictionary (dict)
           {
@@ -394,9 +396,9 @@ def getIgTags(params):
             'ax'    : grid x-axes (numpy.ndarray)
             'ay'    : grid y-axes (numpy.ndarray)
          }
-         
+
          OR
-         
+
         params     : grid parameters given as a dictionary (dict)
           {
             'lat0' : lat of grid lower-left corner in degrees (float)
@@ -420,7 +422,7 @@ def getIgTags(params):
     >>> (ni, nj) = (90,45)
     >>> (lat0, lon0, dlat, dlon)     = (10., 11., 1., 0.5)
     >>> (xlat1, xlon1, xlat2, xlon2) = (0., 180., 1., 270.)
-    >>> params  = rmn.defGrid_ZE(ni, nj, lat0, lon0, dlat, dlon, 
+    >>> params  = rmn.defGrid_ZE(ni, nj, lat0, lon0, dlat, dlon,
     ...                          xlat1, xlon1, xlat2, xlon2)
     >>> (tag1, tag2) = rmn.getIgTags(params)
 
@@ -431,7 +433,7 @@ def getIgTags(params):
     try:
         if params['ax'].shape == params['ay'].shape:
             a = params['ax'].ravel().tolist()
-            a.extend(params['ay'].ravel().tolist())            
+            a.extend(params['ay'].ravel().tolist())
         else:
             a = params['ax'][:, 0].tolist()
             a.extend(params['ay'][0, :].tolist())
@@ -456,9 +458,9 @@ def readGrid(funit, params):
     """
     Create a new grid with its parameters from provided params
     Read grid descriptors from file if need be
-    
+
     Args:
-        funit  (int) : 
+        funit  (int) :
         params (dict): grid parameters given as a dictionary (dict)
             {
             'grtyp'  : type of geographical projection
@@ -503,7 +505,7 @@ def readGrid(funit, params):
     >>> rec   = rmn.fstlir(funit, nomvar='ME')
     >>> grid  = rmn.readGrid(funit, rec)
     >>> rmn.fstcloseall(funit)
-        
+
     See Also:
         writeGrid
         decodeGrid
@@ -521,13 +523,13 @@ def readGrid(funit, params):
 def writeGrid(funit, params):
     """
     Write the grid descriptors to file if need be
-    
+
     Grid descriptors exists only for reference grids: Z, #, Y, U
     For other grid types, this function does nothing since the
     grid is already coded in the record metadata
 
     Args:
-        funit  (int) : 
+        funit  (int) :
         params (dict): grid parameters given as a dictionary (dict)
             These grid params are the one returned by:
                 decodeGrid, readGrid, defGrid_*, encodeGrid
@@ -602,7 +604,7 @@ def writeGrid(funit, params):
     """
     if not params['grtyp'] in ('Z', '#', 'Y', 'U'):
         return
-    
+
     rec = _rc.FST_RDE_META_DEFAULT.copy()
     rec['typvar'] = 'X'
     rec['ip1'] = params['tag1']
@@ -628,7 +630,7 @@ def writeGrid(funit, params):
         rec['etiket'] = params['etiket']
     except KeyError:
         pass
-        
+
     if params['grtyp'] in ('Z', '#', 'Y'):
         ni = params['ax'].shape[0]
         try:
@@ -638,24 +640,25 @@ def writeGrid(funit, params):
         if params['grtyp'] in ('Z', '#'):
             rec['nomvar'] = '>>'
             (rec['ni'], rec['nj']) = (ni, 1)
-            _rf.fstecr(funit,params['ax'],rec)
+            _rf.fstecr(funit, params['ax'], rec)
             rec['nomvar'] = '^^'
             (rec['ni'], rec['nj']) = (1, nj)
-            _rf.fstecr(funit,params['ay'],rec)
+            _rf.fstecr(funit, params['ay'], rec)
         else:
             (rec['ni'], rec['nj']) = (ni, nj)
             rec['nomvar'] = '>>'
-            _rf.fstecr(funit,params['ax'],rec)
+            _rf.fstecr(funit, params['ax'], rec)
             rec['nomvar'] = '^^'
-            _rf.fstecr(funit,params['ay'],rec)
+            _rf.fstecr(funit, params['ay'], rec)
     else:
         try:
             rec['nomvar'] = params['axyname']
         except KeyError:
             rec['nomvar'] = '^>'
-        shape = [1,1,1] ; shape[0:len(params['axy'].shape)] = params['axy'].shape[:]
+        shape = [1, 1, 1]
+        shape[0:len(params['axy'].shape)] = params['axy'].shape[:]
         (rec['ni'], rec['nj'], rec['nk']) = shape[:]
-        _rf.fstecr(funit,params['axy'],rec)
+        _rf.fstecr(funit, params['axy'], rec)
 
 
 def encodeGrid(params):
@@ -663,7 +666,7 @@ def encodeGrid(params):
     Define an FSTD grid with the provided parameters
 
     gridParams = encodeGrid(params)
-    
+
     Args:
        params: grid parameters given as a dictionary (dict)
                at least 'grtyp' must be defined
@@ -687,19 +690,19 @@ def encodeGrid(params):
     Example:
 
     >>> import rpnpy.librmn.all as rmn
-    >>> params0 = { 
-    ...     'grtyp' : 'Z', 
-    ...     'grref' : 'E', 
-    ...     'ni'    : 90, 
-    ...     'nj'    : 45, 
-    ...     'lat0'  : 10., 
-    ...     'lon0'  : 11., 
-    ...     'dlat'  : 1., 
-    ...     'dlon'  : 0.5, 
-    ...     'xlat1' : 0., 
-    ...     'xlon1' : 180., 
-    ...     'xlat2' : 1., 
-    ...     'xlon2' : 270. 
+    >>> params0 = {
+    ...     'grtyp' : 'Z',
+    ...     'grref' : 'E',
+    ...     'ni'    : 90,
+    ...     'nj'    : 45,
+    ...     'lat0'  : 10.,
+    ...     'lon0'  : 11.,
+    ...     'dlat'  : 1.,
+    ...     'dlon'  : 0.5,
+    ...     'xlat1' : 0.,
+    ...     'xlon1' : 180.,
+    ...     'xlat2' : 1.,
+    ...     'xlon2' : 270.
     ...     }
     >>> params = rmn.encodeGrid(params0)
 
@@ -746,8 +749,8 @@ def encodeGrid(params):
         return defGrid_YL(params)
     else:
         raise RMNError('encodeGrid: Grid type not yet supported {grtyp}({grref})'.format(**params))
-        
-    
+
+
 def defGrid_L(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
               setGridId=True):
     """
@@ -813,14 +816,14 @@ def defGrid_L(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
             pass
     for k in ('ni', 'nj'):
         v = params[k]
-        if not isinstance(v, int):
+        if not isinstance(v, _integer_types):
             raise TypeError('defGrid_L: wrong input data type for ' +
                             '{0}, expecting int, Got ({1})'.format(k, type(v)))
         if v <= 0:
             raise ValueError('defGrid_L: grid dims must be >= 0, got {0}={1}'.format(k, v))
     for k in ('lat0', 'lon0', 'dlat', 'dlon'):
         v = params[k]
-        if isinstance(v, int):
+        if isinstance(v, _integer_types):
             v = float(v)
         if not isinstance(v, float):
             raise TypeError('defGrid_L: wrong input data type for ' +
@@ -909,7 +912,7 @@ def defGrid_E(ni, nj=None, xlat1=None, xlon1=None, xlat2=None, xlon2=None,
             pass
     for k in ('ni', 'nj'):
         v = params[k]
-        if not isinstance(v, int):
+        if not isinstance(v, _integer_types):
             raise TypeError('defGrid_E: wrong input data type for ' +
                             '{0}, expecting int, Got ({1})'.format(k, type(v)))
         if v <= 0:
@@ -920,7 +923,7 @@ def defGrid_E(ni, nj=None, xlat1=None, xlon1=None, xlat2=None, xlon2=None,
         except:
             raise TypeError('defGrid_E: provided incomplete grid ' +
                             'description, missing: {0}'.format(k))
-        if isinstance(v, int):
+        if isinstance(v, _integer_types):
             v = float(v)
         if not isinstance(v, float):
             raise TypeError('defGrid_E: wrong input data type for ' +
@@ -1006,17 +1009,17 @@ def defGrid_ZE(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
     Example:
 
     >>> import rpnpy.librmn.all as rmn
-    >>> params0 = { 
-    ...     'ni'    : 90, 
-    ...     'nj'    : 45, 
-    ...     'lat0'  : 10., 
-    ...     'lon0'  : 11., 
-    ...     'dlat'  : 1., 
-    ...     'dlon'  : 0.5, 
-    ...     'xlat1' : 0., 
-    ...     'xlon1' : 180., 
-    ...     'xlat2' : 1., 
-    ...     'xlon2' : 270. 
+    >>> params0 = {
+    ...     'ni'    : 90,
+    ...     'nj'    : 45,
+    ...     'lat0'  : 10.,
+    ...     'lon0'  : 11.,
+    ...     'dlat'  : 1.,
+    ...     'dlon'  : 0.5,
+    ...     'xlat1' : 0.,
+    ...     'xlon1' : 180.,
+    ...     'xlat2' : 1.,
+    ...     'xlon2' : 270.
     ...     }
     >>> params = rmn.defGrid_ZE(params0)
 
@@ -1050,7 +1053,7 @@ def defGrid_ZE(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
     (params['rlat0'], params['rlon0']) = \
         egrid_ll2rll(params['xlat1'], params['xlon1'],
                      params['xlat2'], params['xlon2'],
-                     params['lat0'],  params['lon0'])
+                     params['lat0'], params['lon0'])
     params = defGrid_ZEr(params, setGridId=setGridId)
     (params['lat0'], params['lon0']) = (lat0, lon0)
     return params
@@ -1124,17 +1127,17 @@ def defGrid_ZEr(ni, nj=None, rlat0=None, rlon0=None, dlat=None, dlon=None,
     Example:
 
     >>> import rpnpy.librmn.all as rmn
-    >>> params0 = { 
-    ...     'ni'    : 90, 
-    ...     'nj'    : 45, 
-    ...     'rlat0' : 10., 
-    ...     'rlon0' : 11., 
-    ...     'dlat'  : 1., 
-    ...     'dlon'  : 0.5, 
-    ...     'xlat1' : 0., 
-    ...     'xlon1' : 180., 
-    ...     'xlat2' : 1., 
-    ...     'xlon2' : 270. 
+    >>> params0 = {
+    ...     'ni'    : 90,
+    ...     'nj'    : 45,
+    ...     'rlat0' : 10.,
+    ...     'rlon0' : 11.,
+    ...     'dlat'  : 1.,
+    ...     'dlon'  : 0.5,
+    ...     'xlat1' : 0.,
+    ...     'xlon1' : 180.,
+    ...     'xlat2' : 1.,
+    ...     'xlon2' : 270.
     ...     }
     >>> params = rmn.defGrid_ZEr(params0)
 
@@ -1168,14 +1171,14 @@ def defGrid_ZEr(ni, nj=None, rlat0=None, rlon0=None, dlat=None, dlon=None,
     params['grref'] = 'E'
     for k in ('ni', 'nj'):
         v = params[k]
-        if not isinstance(v, int):
+        if not isinstance(v, _integer_types):
             raise TypeError('defGrid_ZE: wrong input data type for ' +
                             '{0}, expecting int, Got ({1})'.format(k, type(v)))
         if v <= 0:
             raise ValueError('defGrid_ZE: grid dims must be >= 0, got {0}={1}'.format(k, v))
     for k in ('rlat0', 'rlon0', 'dlat', 'dlon'):
         v = params[k]
-        if isinstance(v, int):
+        if isinstance(v, _integer_types):
             v = float(v)
         if not isinstance(v, (float, _np.float32)):
             raise TypeError('defGrid_ZE: wrong input data type for ' +
@@ -1187,7 +1190,7 @@ def defGrid_ZEr(ni, nj=None, rlat0=None, rlon0=None, dlat=None, dlon=None,
         except:
             raise TypeError('defGrid_ZE: provided incomplete grid ' +
                             'description, missing: {0}'.format(k))
-        if isinstance(v, int):
+        if isinstance(v, _integer_types):
             v = float(v)
         if not isinstance(v, (float, _np.float32)):
             raise TypeError('defGrid_ZE: wrong input data type for ' +
@@ -1207,29 +1210,29 @@ def defGrid_ZEr(ni, nj=None, rlat0=None, rlon0=None, dlat=None, dlon=None,
     (params['lat0'], params['lon0']) = \
         egrid_rll2ll(params['xlat1'], params['xlon1'],
                      params['xlat2'], params['xlon2'],
-                     params['rlat0'],  params['rlon0'])
-    for i in xrange(params['ni']):
+                     params['rlat0'], params['rlon0'])
+    for i in range(params['ni']):
         params['ax'][i, 0] = params['rlon0'] + float(i)*params['dlon']
-    for j in xrange(params['nj']):
+    for j in range(params['nj']):
         params['ay'][0, j] = params['rlat0'] + float(j)*params['dlat']
 
     params['ig1'] = ig1234[0]
     params['ig2'] = ig1234[1]
     params['ig3'] = ig1234[2]
     params['ig4'] = ig1234[3]
-    
+
     params['id'] = _ri.ezgdef_fmem(params) if setGridId else -1
 
     (params['tag1'], params['tag2']) = getIgTags(params)
     params['tag3'] = 0
-    
+
     (params['ig1'], params['ig2']) = (params['tag1'], params['tag2'])
     (params['ig3'], params['ig4']) = (params['tag3'], 0)
-    params['shape'] = (params['ni'], params['nj'])    
+    params['shape'] = (params['ni'], params['nj'])
     return params
 
 #TODO: defGrid_diezeEr
-    
+
 def defGrid_diezeE(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
                    xlat1=None, xlon1=None, xlat2=None, xlon2=None,
                    lni=None, lnj=None, i0=None, j0=None, setGridId=True):
@@ -1311,21 +1314,21 @@ def defGrid_diezeE(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
     Example:
 
     >>> import rpnpy.librmn.all as rmn
-    >>> params0 = { 
-    ...     'lni'   : 180, 
-    ...     'lnj'   : 90, 
-    ...     'i0'    : 1, 
-    ...     'j0'    : 1, 
-    ...     'ni'    : 90, 
-    ...     'nj'    : 45, 
-    ...     'lat0'  : 10., 
-    ...     'lon0'  : 11., 
-    ...     'dlat'  : 1., 
-    ...     'dlon'  : 0.5, 
-    ...     'xlat1' : 0., 
-    ...     'xlon1' : 180., 
-    ...     'xlat2' : 1., 
-    ...     'xlon2' : 270. 
+    >>> params0 = {
+    ...     'lni'   : 180,
+    ...     'lnj'   : 90,
+    ...     'i0'    : 1,
+    ...     'j0'    : 1,
+    ...     'ni'    : 90,
+    ...     'nj'    : 45,
+    ...     'lat0'  : 10.,
+    ...     'lon0'  : 11.,
+    ...     'dlat'  : 1.,
+    ...     'dlon'  : 0.5,
+    ...     'xlat1' : 0.,
+    ...     'xlon1' : 180.,
+    ...     'xlat2' : 1.,
+    ...     'xlon2' : 270.
     ...     }
     >>> params = rmn.defGrid_diezeE(params0)
 
@@ -1427,13 +1430,13 @@ def defGrid_ZL(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
     Example:
 
     >>> import rpnpy.librmn.all as rmn
-    >>> params0 = { 
-    ...     'ni'    : 90, 
-    ...     'nj'    : 45, 
-    ...     'lat0'  : 10., 
-    ...     'lon0'  : 11., 
-    ...     'dlat'  : 1., 
-    ...     'dlon'  : 0.5 
+    >>> params0 = {
+    ...     'ni'    : 90,
+    ...     'nj'    : 45,
+    ...     'lat0'  : 10.,
+    ...     'lon0'  : 11.,
+    ...     'dlat'  : 1.,
+    ...     'dlon'  : 0.5
     ...     }
     >>> params = rmn.defGrid_ZL(params0)
 
@@ -1459,14 +1462,14 @@ def defGrid_ZL(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
     params['grref'] = 'L'
     for k in ('ni', 'nj'):
         v = params[k]
-        if not isinstance(v, int):
+        if not isinstance(v, _integer_types):
             raise TypeError('defGrid_ZL: wrong input data type for ' +
                             '{0}, expecting int, Got ({1})'.format(k, type(v)))
         if v <= 0:
             raise ValueError('defGrid_ZL: grid dims must be >= 0, got {0}={1}'.format(k, v))
     for k in ('lat0', 'lon0', 'dlat', 'dlon'):
         v = params[k]
-        if isinstance(v, int):
+        if isinstance(v, _integer_types):
             v = float(v)
         if not isinstance(v, float):
             raise TypeError('defGrid_ZL: wrong input data type for ' +
@@ -1483,9 +1486,9 @@ def defGrid_ZL(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
                              order='FORTRAN')
     params['ay'] = _np.empty((1, params['nj']), dtype=_np.float32,
                              order='FORTRAN')
-    for i in xrange(params['ni']):
+    for i in range(params['ni']):
         params['ax'][i, 0] = params['lon0'] + float(i)*params['dlon']
-    for j in xrange(params['nj']):
+    for j in range(params['nj']):
         params['ay'][0, j] = params['lat0'] + float(j)*params['dlat']
     ## if params['ax'][:, 0].max() > 360.:
     ##     params['ax'][:, 0] -= 360.
@@ -1494,15 +1497,15 @@ def defGrid_ZL(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
     params['ig2'] = ig1234[1]
     params['ig3'] = ig1234[2]
     params['ig4'] = ig1234[3]
-    
+
     params['id'] = _ri.ezgdef_fmem(params) if setGridId else -1
 
     (params['tag1'], params['tag2']) = getIgTags(params)
     params['tag3'] = 0
-    
+
     (params['ig1'], params['ig2']) = (params['tag1'], params['tag2'])
     (params['ig3'], params['ig4']) = (params['tag3'], 0)
-    params['shape'] = (params['ni'], params['nj'])    
+    params['shape'] = (params['ni'], params['nj'])
     return params
 
 
@@ -1568,17 +1571,17 @@ def defGrid_diezeL(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
     Example:
 
     >>> import rpnpy.librmn.all as rmn
-    >>> params0 = { 
-    ...     'lni'   : 180, 
-    ...     'lnj'   : 90, 
-    ...     'i0'    : 1, 
-    ...     'j0'    : 1, 
-    ...     'ni'    : 90, 
-    ...     'nj'    : 45, 
-    ...     'lat0'  : 10., 
-    ...     'lon0'  : 11., 
-    ...     'dlat'  : 1., 
-    ...     'dlon'  : 0.5, 
+    >>> params0 = {
+    ...     'lni'   : 180,
+    ...     'lnj'   : 90,
+    ...     'i0'    : 1,
+    ...     'j0'    : 1,
+    ...     'ni'    : 90,
+    ...     'nj'    : 45,
+    ...     'lat0'  : 10.,
+    ...     'lon0'  : 11.,
+    ...     'dlat'  : 1.,
+    ...     'dlon'  : 0.5,
     ...     }
     >>> params = rmn.defGrid_diezeL(params0)
 
@@ -1673,7 +1676,7 @@ def defGrid_YL(ax, ay=None, setGridId=True):
     Example:
 
     >>> import rpnpy.librmn.all as rmn
-    >>> params0 = { 
+    >>> params0 = {
     ...     'ax'    : ( 45.,  46.5),
     ...     'ay'    : (273., 273. )
     ...     }
@@ -1703,8 +1706,8 @@ def defGrid_YL(ax, ay=None, setGridId=True):
         raise TypeError("Provided ax, ay arrays have inconsistent shapes")
 
     if len(params['ax'].shape) != 2:
-        params['ax'] = params['ax'].reshape((params['ax'].size,1))
-        params['ay'] = params['ay'].reshape((params['ay'].size,1))
+        params['ax'] = params['ax'].reshape((params['ax'].size, 1))
+        params['ay'] = params['ay'].reshape((params['ay'].size, 1))
 
     (params['ni'], params['nj']) = params['ax'].shape
 
@@ -1721,12 +1724,12 @@ def defGrid_YL(ax, ay=None, setGridId=True):
     params['lon0'] = 0.
     params['dlat'] = 1.
     params['dlon'] = 1.
-    
+
     params['id'] = _ri.ezgdef_fmem(params) if setGridId else -1
-    
+
     (params['tag1'], params['tag2']) = getIgTags(params)
     params['tag3'] = 0
-    
+
     (params['ig1'], params['ig2']) = (params['tag1'], params['tag2'])
     (params['ig3'], params['ig4']) = (params['tag3'], 0)
     params['shape'] = (params['ni'], params['nj'])
@@ -1800,7 +1803,7 @@ def defGrid_G(ni, nj=None, glb=True, north=True, inverted=False,
             pass
     for k in ('ni', 'nj'):
         v = params[k]
-        if not isinstance(v, int):
+        if not isinstance(v, _integer_types):
             raise TypeError('defGrid_G: wrong input data type for ' +
                             '{0}, expecting int, Got ({1})'.format(k, type(v)))
         if v <= 0:
@@ -1885,7 +1888,7 @@ def defGrid_PS(ni, nj=None, north=True, pi=None, pj=None, d60=None,
         'ni'   : ni,
         'nj'   : nj,
         'north' : north,
-        'pi'    : pi, 
+        'pi'    : pi,
         'pj'    : pj,
         'd60'   : d60,
         'dgrw'  : dgrw
@@ -1898,7 +1901,7 @@ def defGrid_PS(ni, nj=None, north=True, pi=None, pj=None, d60=None,
             pass
     for k in ('ni', 'nj'):
         v = params[k]
-        if not isinstance(v, int):
+        if not isinstance(v, _integer_types):
             raise TypeError('defGrid_PS: wrong input data type for ' +
                             '{0}, expecting int, Got ({1})'.format(k, type(v)))
         if v <= 0:
@@ -1909,7 +1912,7 @@ def defGrid_PS(ni, nj=None, north=True, pi=None, pj=None, d60=None,
         except:
             raise TypeError('defGrid_PS: provided incomplete grid ' +
                             'description, missing: {0}'.format(k))
-        if isinstance(v, int):
+        if isinstance(v, _integer_types):
             v = float(v)
         if not isinstance(v, float):
             raise TypeError('defGrid_PS: wrong input data type for' +
@@ -1995,7 +1998,7 @@ def defGrid_YY(nj, overlap=0., xlat1=0., xlon1=180., xlat2=0., xlon2=270.,
     Example:
 
     >>> import rpnpy.librmn.all as rmn
-    >>> params = rmn.defGrid_YY(31, overlap=1.5, xlat1=0., xlon1=180., 
+    >>> params = rmn.defGrid_YY(31, overlap=1.5, xlat1=0., xlon1=180.,
     ...                         xlat2=0., xlon2=270.)
 
     See Also:
@@ -2020,14 +2023,14 @@ def defGrid_YY(nj, overlap=0., xlat1=0., xlon1=180., xlat2=0., xlon2=270.,
             pass
     for k in ('nj', ):
         v = params[k]
-        if not isinstance(v, int):
+        if not isinstance(v, _integer_types):
             raise TypeError('defGrid_YY: wrong input data type for ' +
                             '{0}, expecting int, Got ({1})'.format(k, type(v)))
         if v <= 0:
             raise ValueError('defGrid_YY: grid dims must be >= 0, got {0}={1}'.format(k, v))
     for k in ('xlat1', 'xlon1', 'xlat2', 'xlon2', 'overlap'):
         v = params[k]
-        if isinstance(v, int):
+        if isinstance(v, _integer_types):
             v = float(v)
         if not isinstance(v, float):
             raise TypeError('defGrid_YY: wrong input data type for ' +
@@ -2084,7 +2087,7 @@ def defGrid_YY(nj, overlap=0., xlat1=0., xlon1=180., xlat2=0., xlon2=270.,
     params['axyname'] = '^>'
     (params['tag1'], params['tag2']) = getIgTags(params)
     params['tag3'] = 0
-    
+
     (params['ig1'], params['ig2']) = (params['tag1'], params['tag2'])
     (params['ig3'], params['ig4']) = (params['tag3'], 0)
     return params
@@ -2095,9 +2098,9 @@ def yyg_yangrot_py(yinlat1, yinlon1, yinlat2, yinlon2):
     """
     Compute the rotation for the Yang grid using the rotation from Yin
 
-    (yanlat1, yanlon1, yanlat2, yanlon2) = 
+    (yanlat1, yanlon1, yanlat2, yanlon2) =
         yyg_yangrot_py(yinlat1, yinlon1, yinlat2, yinlon2)
-        
+
     Args:
         yinlat1, yinlon1, yinlat2, yinlon2
     Returns:
@@ -2127,18 +2130,18 @@ def yyg_yangrot_py(yinlat1, yinlon1, yinlat2, yinlon2):
     xyz2 = _ll.llacar_py(xlon2, xlat2)
     xyz3 = [0., 0., 0.]
     xyz4 = [0., 0., 0.]
-    for i in xrange(3):
+    for i in range(3):
         xyz3[i] = 0.
         xyz4[i] = 0.
-        for j in xrange(3):
+        for j in range(3):
             xyz3[i] = xyz3[i] + invrot[i, j]*xyz1[j]
             xyz4[i] = xyz4[i] + invrot[i, j]*xyz2[j]
     #Obtain the real geographic coordinates
     (xlon1, xlat1) = _ll.cartall_py(xyz3)
     (xlon2, xlat2) = _ll.cartall_py(xyz4)
-    if (xlon1 >= 360.):
+    if xlon1 >= 360.:
         xlon1 -= 360.
-    if (xlon2 >= 360.):
+    if xlon2 >= 360.:
         xlon2 -= 360.
     return (xlat1, xlon1, xlat2, xlon2)
 
@@ -2167,21 +2170,21 @@ def yyg_pos_rec(yinlat1, yinlon1, yinlat2, yinlon2, ax, ay):
     Example:
 
     >>> import rpnpy.librmn.all as rmn
-    >>> params0 = { 
-    ...     'ni'    : 90, 
-    ...     'nj'    : 45, 
-    ...     'lat0'  : 10., 
-    ...     'lon0'  : 11., 
-    ...     'dlat'  : 1., 
-    ...     'dlon'  : 0.5, 
-    ...     'xlat1' : 0., 
-    ...     'xlon1' : 180., 
-    ...     'xlat2' : 1., 
-    ...     'xlon2' : 270. 
+    >>> params0 = {
+    ...     'ni'    : 90,
+    ...     'nj'    : 45,
+    ...     'lat0'  : 10.,
+    ...     'lon0'  : 11.,
+    ...     'dlat'  : 1.,
+    ...     'dlon'  : 0.5,
+    ...     'xlat1' : 0.,
+    ...     'xlon1' : 180.,
+    ...     'xlat2' : 1.,
+    ...     'xlon2' : 270.
     ...     }
     >>> params = rmn.defGrid_ZE(params0)
-    >>> axy = rmn.yyg_pos_rec(params['xlat1'], params['xlon1'], 
-    ...                       params['xlat2'], params['xlon2'], 
+    >>> axy = rmn.yyg_pos_rec(params['xlat1'], params['xlon1'],
+    ...                       params['xlat2'], params['xlon2'],
     ...                       params['ax'],params['ay'])
 
     See Also:
@@ -2189,7 +2192,7 @@ def yyg_pos_rec(yinlat1, yinlon1, yinlat2, yinlon2, ax, ay):
         decodeGrid
         encodeGrid
     """
-    vesion_uencode    = 1
+    vesion_uencode = 1
     family_uencode_S = 'F'
     (yanlat1, yanlon1, yanlat2, yanlon2) = \
             yyg_yangrot_py(yinlat1, yinlon1, yinlat2, yinlon2)
@@ -2197,14 +2200,14 @@ def yyg_pos_rec(yinlat1, yinlon1, yinlat2, yinlon2, ax, ay):
     nj = ay.size
     naxy = 5 + 2*(10+ni+nj)
     axy = _np.empty(naxy, dtype=_np.float32)
-    axy[0 ] = ord(family_uencode_S)
-    axy[1 ] = vesion_uencode
-    axy[2 ] = 2 # 2 grids (Yin & Yang)
-    axy[3 ] = 1 # the 2 grids have same resolution
-    axy[4 ] = 1 # the 2 grids have same area extension on the sphere
+    axy[0] = ord(family_uencode_S)
+    axy[1] = vesion_uencode
+    axy[2] = 2 # 2 grids (Yin & Yang)
+    axy[3] = 1 # the 2 grids have same resolution
+    axy[4] = 1 # the 2 grids have same area extension on the sphere
     #YIN
     sindx = 5
-    axy[sindx  ] = ni
+    axy[sindx] = ni
     axy[sindx+1] = nj
     axy[sindx+2] = ax[0, 0]
     axy[sindx+3] = ax[ni-1, 0]
@@ -2214,11 +2217,11 @@ def yyg_pos_rec(yinlat1, yinlon1, yinlat2, yinlon2, ax, ay):
     axy[sindx+7] = yinlon1
     axy[sindx+8] = yinlat2
     axy[sindx+9] = yinlon2
-    axy[sindx+10   :sindx+10+ni   ] = ax[0:ni, 0]
-    axy[sindx+10+ni:sindx+10+ni+nj] = ay[0   , 0:nj]
+    axy[sindx+10:sindx+10+ni] = ax[0:ni, 0]
+    axy[sindx+10+ni:sindx+10+ni+nj] = ay[0, 0:nj]
     #YAN
     sindx = sindx+10+ni+nj
-    axy[sindx  ] = ni
+    axy[sindx] = ni
     axy[sindx+1] = nj
     axy[sindx+2] = ax[0, 0]
     axy[sindx+3] = ax[ni-1, 0]
@@ -2228,8 +2231,8 @@ def yyg_pos_rec(yinlat1, yinlon1, yinlat2, yinlon2, ax, ay):
     axy[sindx+7] = yanlon1
     axy[sindx+8] = yanlat2
     axy[sindx+9] = yanlon2
-    axy[sindx+10    :sindx+10+ni  ] = ax[0:ni, 0]
-    axy[sindx+10+ni:sindx+10+ni+nj] = ay[0   , 0:nj]
+    axy[sindx+10:sindx+10+ni] = ax[0:ni, 0]
+    axy[sindx+10+ni:sindx+10+ni+nj] = ay[0, 0:nj]
     return axy
 
 #TODO: write in C (modelutils's C): llacar, cartall, yyg_yangrot, yyg_pos_rec
@@ -2237,9 +2240,9 @@ def egrid_rot_matrix(xlat1, xlon1, xlat2, xlon2):
     """
     Compute the rotation for the Yang grid using the rotation from Yin
 
-    (yanlat1, yanlon1, yanlat2, yanlon2) = 
+    (yanlat1, yanlon1, yanlat2, yanlon2) =
         yyg_yangrot_py(xlat1, xlon1, xlat2, xlon2)
-        
+
     Args:
         xlat1, xlon1 : lat, lon of the grid center in degrees (float)
                       This defines, in rotated coor., (rlat, rlon) = (0., 180.)
@@ -2277,9 +2280,9 @@ def egrid_rot_matrix(xlat1, xlon1, xlat2, xlon2):
               ( ( (a*xyz1[1]) - xyz2[1] ) / b )**2 + \
               ( ( (a*xyz1[2]) - xyz2[2] ) / b )**2  )
     rot = _np.empty((3, 3), dtype=_np.float32)
-    rot[0, 0] =  -xyz1[0]/c
-    rot[0, 1] =  -xyz1[1]/c
-    rot[0, 2] =  -xyz1[2]/c
+    rot[0, 0] = -xyz1[0]/c
+    rot[0, 1] = -xyz1[1]/c
+    rot[0, 2] = -xyz1[2]/c
     rot[1, 0] = ( ((a*xyz1[0]) - xyz2[0]) / b)/d
     rot[1, 1] = ( ((a*xyz1[1]) - xyz2[1]) / b)/d
     rot[1, 2] = ( ((a*xyz1[2]) - xyz2[2]) / b)/d
@@ -2293,9 +2296,9 @@ def egrid_rll2ll(xlat1, xlon1, xlat2, xlon2, rlat, rlon):
     """
     Compute lat-lon from rotated lat-lon
     of a rotated cylindrical equidistent (E) grid
-    
+
     (lat, lon) = egrid_rll2ll(xlat1, xlon1, xlat2, xlon2, rlat, rlon)
-        
+
     Args:
         xlat1, xlon1 : lat, lon of the grid center in degrees (float)
                        This defines, in rotated coor., (rlat, rlon) = (0., 180.)
@@ -2331,24 +2334,24 @@ def egrid_rll2ll(xlat1, xlon1, xlat2, xlon2, rlat, rlon):
     #Obtain the cartesian coordinates
     xyz1 = _ll.llacar_py(rlon, rlat)
     xyz3 = [0., 0., 0.]
-    for i in xrange(3):
+    for i in range(3):
         xyz3[i] = 0.
-        for j in xrange(3):
+        for j in range(3):
             xyz3[i] = xyz3[i] + invrot[i, j]*xyz1[j]
     #Obtain the real geographic coordinates
     (lon, lat) = _ll.cartall_py(xyz3)
-    if (lon >= 360.):
+    if lon >= 360.:
         lon -= 360.
     return (lat, lon)
 
-    
+
 def egrid_ll2rll(xlat1, xlon1, xlat2, xlon2, lat, lon):
     """
     Compute rotated lat-lon from non rotated lat-lon
     of a rotated cylindrical equidistent (E) grid
-    
+
     (rlat, rlon) = egrid_ll2rll(xlat1, xlon1, xlat2, xlon2, lat, lon)
-        
+
     Args:
         xlat1, xlon1 : lat, lon of the grid center in degrees (float)
                        This defines, in rotated coor., (rlat, rlon) = (0., 180.)
@@ -2382,13 +2385,13 @@ def egrid_ll2rll(xlat1, xlon1, xlat2, xlon2, lat, lon):
     #Obtain the cartesian coordinates
     xyz1 = _ll.llacar_py(lon, lat)
     xyz3 = [0., 0., 0.]
-    for i in xrange(3):
+    for i in range(3):
         xyz3[i] = 0.
-        for j in xrange(3):
+        for j in range(3):
             xyz3[i] = xyz3[i] + rot[i, j]*xyz1[j]
     #Obtain the real geographic coordinates
     (lon, lat) = _ll.cartall_py(xyz3)
-    if (lon >= 360.):
+    if lon >= 360.:
         lon -= 360.
     return (lat, lon)
 

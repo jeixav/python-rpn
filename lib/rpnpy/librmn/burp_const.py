@@ -27,7 +27,7 @@ import numpy as _np
 #TODO: cleanup
 ## See:
 ## * ls -lL $AFSISIO/datafiles/constants/ | grep -i burp
-## ** $AFSISIO/datafiles/constants/tableburp_[ef].val 
+## ** $AFSISIO/datafiles/constants/tableburp_[ef].val
 ##    table_b_bufr_[ef]_opsvalid_v23
 ## ** $AFSISIO/datafiles/constants/tableburp [fr]
 ##    $AFSISIO/datafiles/constants/table_b_bufr_e [en]
@@ -43,15 +43,61 @@ import numpy as _np
 ## * libecbufr_tables/*
 
 ##DETAILS_START
+
+#== Macros ==
+#<source lang=python>
+# BURP2BIN(x)  converts a int into its binary string representation, burp bit order
+BURP2BIN = lambda v, l=32: "{{0:0{}b}}".format(l).format(v)
+
+# BURP2BIN2LIST_BUFR(x)  converts a int into a list of bit values, bufr bit order
+BURP2BIN2LIST_BUFR = lambda v, l=32: [int(i) for i in list(BURP2BIN(v, l))]
+
+# BURP2BIN_BUFR(x)  converts a int into a list of bit values, burp bit order
+BURP2BIN2LIST = lambda v, l=32: BURP2BIN2LIST_BUFR(v, l)[::-1]
+
+# BRP_ILAT2RLAT(x)  decodes lat from burp code
+BRP_ILAT2RLAT = lambda x: (float(x)/100.) - 90.
+
+# BRP_RLAT2ILAT(x)  encodes lat to burp code
+BRP_RLAT2ILAT = lambda x: int(round(((x + 90.) * 100.)))
+
+# BRP_ILON2RLON(x)  decodes lon from burp code
+BRP_ILON2RLON = lambda x: float(x)/100.
+
+# BRP_RLON2ILON(x)  encodes lon to burp code
+BRP_RLON2ILON = lambda x: int(round(x * 100.))
+
+# BRP_IELEV2RELEV(x)  decodes elev from burp code
+BRP_IELEV2RELEV = lambda x: float(x) - 400.  #TODO: Special case for x=0?
+
+# BRP_RELEV2IELEV(x)  encodes elev to burp code
+BRP_RELEV2IELEV = lambda x: int(round(x + 400.))  #TODO: Special case for x=0?
+
+# BRP_IDX2RDX(x)  decodes dx from burp code
+BRP_IDX2RDX = lambda x: float(x)/10.
+
+# BRP_RDX2IDX(x)  encodes dx to burp code
+BRP_RDX2IDX = lambda x: int(round(x * 10.))
+
+# BRP_IDY2RDY(x)  decodes dy from burp co
+BRP_IDY2RDY = lambda x: float(x)/10.
+
+# BRP_RDY2IDY(x)  encodes dy to burp code
+BRP_RDY2IDY = lambda x: int(round(x * 10.))
+
+# Minimum size for report and block buffers
+_BITMOT = 32  #Note: this is platform dependent
+_M64 = lambda A: int((A+63)/64)*64
+LBLK = lambda NELE, NVAL, NT, NBIT: 128 + _M64((NELE-3)*16) + \
+                                          _M64(NELE*NVAL*NT*NBIT)
+LRPT = lambda LBLOCS: 10 + (320 + LBLOCS)/_BITMOT
+#</source>
+
 #== Constants Details ==
 #=== BURP Constants ===
 
 #NOTE: BUFR numérote les bits de 1 à 7, le bit 1 étant celui de poids le plus élevé
 #<source lang=python>
-BURP2BIN = lambda v,l=32: "{{0:0{}b}}".format(l).format(v)
-BURP2BIN2LIST_BUFR = lambda v,l=32: [int(i) for i in list(BURP2BIN(v,l))]
-BURP2BIN2LIST = lambda v,l=32: BURP2BIN2LIST_BUFR(v,l)[::-1]
-
 MRBCVT_DECODE = 0
 MRBCVT_ENCODE = 1
 
@@ -63,9 +109,9 @@ BURP_RVAL_MISSING = { #TODO: review
     ## 0: _np.uint32,      # binary, transparent
     ## 2: _np.uint32,      # unsigned integer
     ## 3: _np.uint8,       # character string
-    ## 4: _np.int32,       # signed integer
+    4: int(BURP_RVAL_MISSING0),       # signed integer
     ## 5: _np.uint8,       # character string (uppercase)
-    6: BURP_RVAL_MISSING0, # floating point 
+    6: BURP_RVAL_MISSING0, # floating point
     7: BURP_RVAL_MISSING0, # double precision
     ## 8: _np.complex64,   # complex IEEE        #TODO: review
     ## 9: _np.complex128   # double complex IEEE #TODO: review
@@ -144,7 +190,7 @@ BURP_FLAGS_IDX = dict([(v, k) for k, v in BURP_FLAGS_IDX_NAME.items()])
 
 
 #<source lang=python>
-BURP_IDTYP_DESC = { 
+BURP_IDTYP_DESC = {
     '12' : 'SYNOP, NON AUTOMATIQUE',
     '13' : 'SHIP, NON AUTOMATIQUE',
     '14' : 'SYNOP MOBIL',
@@ -262,16 +308,16 @@ BURP_IDTYP_IDX = dict([(v, int(k)) for k, v in BURP_IDTYP_DESC.items()])
 
 #==== Data types ====
 
-## BURP valid code for data types
+#BURP valid code for data types
 #<source lang=python>
 BURP_DATYP_LIST = { #TODO: review
-    'binary'  : 0,  # 0 = string of bits (bit string)  
-    'uint'    : 2,  # 2 = unsigned integers  
-    'char'    : 3,  # 3 = characters (NBIT must be equal to 8)  
-    'int'     : 4,  # 4 = signed integers  
+    'binary'  : 0,  # 0 = string of bits (bit string)
+    'uint'    : 2,  # 2 = unsigned integers
+    'char'    : 3,  # 3 = characters (NBIT must be equal to 8)
+    'int'     : 4,  # 4 = signed integers
     'upchar'  : 5,  # 5 = uppercase characters (the lowercase characters
                     #     will be converted to uppercase during the read)
-                    #     (NBIT must be equal to 8)  
+                    #     (NBIT must be equal to 8)
     'float'   : 6,  # 6 = real*4 (ie: 32bits)  #TODO: review
                     # ?? nombres complexes, partie réelle, simple précision (R4)
     'double'  : 7,  # 7 = real*8 (ie: 64bits)  #TODO: review
@@ -284,7 +330,7 @@ BURP_DATYP_LIST = { #TODO: review
 BURP_DATYP_NAMES = dict([(v, k) for k, v in BURP_DATYP_LIST.items()])
 #</source>
 
-## Numpy versus BURP data type equivalence
+#Numpy versus BURP data type equivalence
 #<source lang=python>
 BURP_DATYP2NUMPY_LIST = { #TODO: review
     0: _np.uint32,    # binary, transparent
@@ -297,6 +343,15 @@ BURP_DATYP2NUMPY_LIST = { #TODO: review
     8: _np.complex64, # complex IEEE        #TODO: review
     9: _np.complex128 # double complex IEEE #TODO: review
 }
+BURP_NUMPY2DATYP_LIST = { #TODO: review
+    _np.uint32 : (0, 2),  # binary, transparent || unsigned integer
+    _np.uint8 : (3, 5),   # character string || character string (uppercase)
+    _np.int32 : (4,),     # signed integer
+    _np.float32 : (6,),   # floating point      #TODO: review
+    _np.float64 : (7,),   # double precision    #TODO: review
+    _np.complex64 : (8,), # complex IEEE        #TODO: review
+    _np.complex128 : (9,) # double complex IEEE #TODO: review
+}
 ## Note: Type 3 and 5 are processed like strings of bits thus,
 ##       the user should do the data compression himself.
 #</source>
@@ -307,17 +362,25 @@ BURP_BKNAT_MULTI_DESC = {
     0 : 'uni',
     1 : 'multi'
     }
+BURP_BKNAT_MULTI_IDX = dict(
+    [(v, int(k)) for k, v in BURP_BKNAT_MULTI_DESC.items()]
+    )
+
 BURP_BKNAT_KIND_DESC = {
     0 : 'data',
     1 : 'info',
     2 : 'desc3d',
     3 : 'flags'
     }
+BURP_BKNAT_KIND_IDX = dict(
+    [(v, int(k)) for k, v in BURP_BKNAT_KIND_DESC.items()]
+    )
 
 BURP_BKTYP_ALT_DESC = {
     0 : 'surf',
     1 : 'alt'
     }
+BURP_BKTYP_ALT_IDX = dict([(v, int(k)) for k, v in BURP_BKTYP_ALT_DESC.items()])
 
 BURP_BKTYP_KIND_DESC = {
     0 : 'observations (ADE)',
@@ -346,13 +409,16 @@ BURP_BKTYP_KIND_DESC = {
     23 : 'forecast, GEPS',
     24 : 'forecast, REPS',
     25 : 'probabilistic forecast',
-    25 : 'deterministic forecast',
+    26 : 'deterministic forecast',
     27 : 'QC weather elements (QCOBS)',
     28 : 'QA of DMSobservations'
     }
+BURP_BKTYP_KIND_IDX = dict(
+    [(v, int(k)) for k, v in BURP_BKTYP_KIND_DESC.items()]
+    )
 
 ## (bktyp_alt, bktyp_kind, bkstp) : description
-BURP_BKSTP_DESC = { #TODO
+BURP_BKSTP_DESC = {
     (0, 0, 0) : 'observed value',
     (0, 1, 0) : 'observed value',
     (0, 0, 1) : 'correction to position and/or identificator',
@@ -498,6 +564,11 @@ BURP_BKSTP_DESC = { #TODO
     (1, 22, 5) : 'E (données, Multi), type de surface, basse densité',
     (1, 22, 6) : 'F (données, Multi), type de surface, haute densité',
     }
+## (bktyp_alt, bktyp_kind, bkstp_desc) : bkstp
+BURP_BKSTP_IDX  = dict(
+    [((k[0], k[1], v), int(k[2])) for k, v in BURP_BKSTP_DESC.items()]
+    )
+
 #</source>
 ##DETAILS_END
 
@@ -515,9 +586,14 @@ BURP_BKSTP_DESC = { #TODO
 ## 4	16	DERIV	9	Élément douteux
 ## 3	8	ADE	10	Élément peut-être erroné
 ## 2	4	ADE	11	Élément erroné
-## 1	2	ADE	12	Élément qui excède un extrême climatologique (ou) qui ne passe pas le test de consistance
+## 1	2	ADE	12	Élément qui excède un extrême climatologique (ou) qui ne
+##                  passe pas le test de consistance
 ## 0	1	ADE	13	Élément modifié ou généré par l'ADE
-## Pour répondre à de nouveaux besoins, nous avons dû étendre le nombre de marqueurs avec une nouvelle liste qui constituera les marqueurs qu'on dira « secondaires » car ceux-ci seront utilisés en conjonction avec les marqueurs dits « primaires ». Nous avons la possibilité d'étendre jusqu'au bit 32.
+## Pour répondre à de nouveaux besoins, nous avons dû étendre le nombre de
+## marqueurs avec une nouvelle liste qui constituera les marqueurs qu'on
+## dira « secondaires » car ceux-ci seront utilisés en conjonction avec
+## les marqueurs dits « primaires ». Nous avons la possibilité
+## d'étendre jusqu'au bit 32.
 
 ## Voici les MARQUEURS que l'on nomment secondaires.
 ## Bits	Décimal	Type de données	REF	Description
