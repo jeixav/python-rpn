@@ -32,6 +32,7 @@ sys.path.insert(0, os.path.join(os.path.abspath('..'), 'lib'))
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
+    'sphinx.ext.intersphinx',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -339,3 +340,6 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #
 # texinfo_no_detailmenu = False
+
+intersphinx_mapping = {'python': ('https://docs.python.org/2', None),
+                       'numpy': ('http://docs.scipy.org/doc/numpy/', None)}
