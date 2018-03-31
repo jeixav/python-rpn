@@ -2387,30 +2387,26 @@ def convertIp(mode, v, k=0):
 
         p (float): Real Value
 
-        kind (int): Level encoding kind/code
+        kind (int): Level encoding kind/code; can take the following values::
 
-        Can take the following values:
+            0, p is height (m) above sea level (-20 000 → 100 000)
+            1, p is sigma (0.0 → 1.0)
+            2, p is pressure (mb) (0 → 1100)
+            3, p is an arbitrary code (-4.8e8 → 1.0e10)
+            4, p est en hauteur (M) rel. au niveau du sol (-20, 000 → 100, 000)
+            5, p est en coordonnee hybride (0.0 → 1.0)
+            6, p est en coordonnee theta (1 → 200, 000)
+            10, p represente le temps en heure (0.0 → 1.0e10)
+            15, reserve (entiers)
+            17, p represente l'indice x de la matrice de conversion (1.0 → 1.0e10)(partagé avec kind=1 a cause du range exclusif
 
-        - 0, p is height (m) above sea level (-20 000 → 100 000)
-        - 1, p is sigma (0.0 → 1.0)
-        - 2, p is pressure (mb) (0 → 1100)
-        - 3, p is an arbitrary code (-4.8e8 → 1.0e10)
-        - 4, p est en hauteur (M) rel. au niveau du sol (-20, 000 → 100, 000)
-        - 5, p est en coordonnee hybride (0.0 → 1.0)
-        - 6, p est en coordonnee theta (1 → 200, 000)
-        - 10, p represente le temps en heure (0.0 → 1.0e10)
-        - 15, reserve (entiers)
-        - 17, p represente l'indice x de la matrice de conversion (1.0 → 1.0e10)(partagé avec kind=1 a cause du range exclusif
-        - 21, p est en metres-pression (0 → 1, 000, 000) fact=1e4 (partagé avec kind=5 a cause du range exclusif)
-            
-        mode (int): Conversion mode
-        Can take the following values
+        mode (int): Conversion mode; can take the following values::
 
-        - -1, IP to P
-        - 0, force conversion for ip to 31 bits (default = ip has 15 bits) (appel d'initialisation)
-        - 1, P to IP
-        - 2, P to IP with NEWSTYLE forced to true
-        - 3, P to IP with NEWSTYLE forced to false
+             -1, IP to P
+             0, force conversion for ip to 31 bits (default = ip has 15 bits) (appel d'initialisation)
+             1, P to IP
+             2, P to IP with NEWSTYLE forced to true
+
 
     Returns:
         int, ip Encoded value, if mode > 0
