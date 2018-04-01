@@ -62,6 +62,7 @@ class EzscintError(RMNError):
     you may want to catch that error with a 'try ... except' block.
 
     Examples:
+
     >>> import rpnpy.librmn.all as rmn
     >>> try:
     ...    rmn.ezsetopt(rmn.EZ_OPT_INTERP_DEGREE, rmn.EZ_INTERP_LINEAR)
@@ -96,6 +97,7 @@ def ezsetopt(option, value):
         EzscintError on any other error
 
     Examples:
+
     >>> import rpnpy.librmn.all as rmn
     >>> rmn.ezsetopt(rmn.EZ_OPT_INTERP_DEGREE, rmn.EZ_INTERP_LINEAR)
     >>> rmn.ezsetopt(rmn.EZ_OPT_USE_1SUBGRID,  rmn.EZ_YES)
@@ -142,6 +144,7 @@ def ezqkdef(ni, nj=None, grtyp=None, ig1=None, ig2=None, ig3=None, ig4=None,
         EzscintError on any other error
 
     Examples:
+
     >>> import rpnpy.librmn.all as rmn
     >>> # Define a LatLon grid
     >>> (grtyp, lat0, lon0, dlat, dlon) = ('L', 45., 273., 0.5, 0.5)
@@ -210,6 +213,7 @@ def ezgdef_fmem(ni, nj=None, grtyp=None, grref=None, ig1=None, ig2=None,
         EzscintError on any other error
 
     Examples:
+
     >>> import numpy as np
     >>> import rpnpy.librmn.all as rmn
     >>> (ni,nj) = (90, 45)
@@ -310,6 +314,7 @@ def ezgdef_supergrid(ni, nj, grtyp, grref, vercode, subgridid):
         EzscintError on any other error
 
     Examples:
+
     >>> import rpnpy.librmn.all as rmn
     >>> nj = 31 ; ni = (nj-1)*3 + 1
     >>> gp = {
@@ -387,6 +392,7 @@ def ezdefset(gdidout, gdidin):
         EzscintError on any other error
 
     Examples:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
 
@@ -445,6 +451,7 @@ def gdsetmask(gdid, mask):
         EzscintError on any other error
 
     Examples:
+
     >>> import os, os.path
     >>> import numpy as np
     >>> import rpnpy.librmn.all as rmn
@@ -511,6 +518,7 @@ def ezgetopt(option, vtype=int):
         EzscintError on any other error
 
     Examples:
+
     >>> import rpnpy.librmn.all as rmn
     >>> interp_degree = rmn.ezgetopt(rmn.EZ_OPT_INTERP_DEGREE, vtype=str)
     >>> print("# Field will be interpolated with type: {0}".format(interp_degree))
@@ -558,6 +566,7 @@ def ezget_nsubgrids(super_gdid):
         EzscintError on any other error
 
     Examples:
+
     >>> import rpnpy.librmn.all as rmn
     >>> yy = rmn.defGrid_YY(31)
     >>> n = rmn.ezget_nsubgrids(yy['id'])
@@ -597,6 +606,7 @@ def ezget_subgridids(super_gdid):
         EzscintError on any other error
 
     Examples:
+
     >>> import rpnpy.librmn.all as rmn
     >>> yy = rmn.defGrid_YY(31)
     >>> idlist = rmn.ezget_subgridids(yy['id'])
@@ -650,6 +660,7 @@ def ezgprm(gdid, doSubGrid=False):
         EzscintError on any other error
 
     Examples:
+
     >>> import rpnpy.librmn.all as rmn
     >>>
     >>> # Define a LatLon grid
@@ -736,6 +747,7 @@ def ezgxprm(gdid, doSubGrid=False):
         EzscintError on any other error
 
     Examples:
+
     >>> import numpy as np
     >>> import rpnpy.librmn.all as rmn
     >>>
@@ -853,6 +865,7 @@ def ezgfstp(gdid):
         EzscintError on any other error
 
     Examples:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>>
@@ -942,6 +955,7 @@ def gdgaxes(gdid, ax=None, ay=None):
         EzscintError on any other error
 
     Examples:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>>
@@ -1040,6 +1054,7 @@ def gdll(gdid, lat=None, lon=None):
         EzscintError on any other error
 
     Examples:
+
     >>> import rpnpy.librmn.all as rmn
     >>> grid = rmn.defGrid_G(90, 45)
     >>> lalo = rmn.gdll(grid['id'])
@@ -1113,7 +1128,8 @@ def gdxyfll(gdid, lat=None, lon=None):
         TypeError    on wrong input arg types
         EzscintError on any other error
 
-    Examples:
+    Example:
+
     >>> import rpnpy.librmn.all as rmn
     >>> grid = rmn.defGrid_G(90, 45)
     >>> (la, lo) = (45., 273.)
@@ -1187,6 +1203,7 @@ def gdllfxy(gdid, xpts=None, ypts=None):
         EzscintError on any other error
 
     Examples:
+
     >>> import rpnpy.librmn.all as rmn
     >>> grid = rmn.defGrid_G(90, 45)
     >>> (i, j) = (69, 34)
@@ -1251,6 +1268,7 @@ def gdgetmask(gdid, mask=None):
         EzscintError on any other error
 
     Examples:
+
     >>> import os, os.path
     >>> import numpy as np
     >>> import rpnpy.librmn.all as rmn
@@ -1325,6 +1343,7 @@ def ezsint(gdidout, gdidin, zin, zout=None):
         EzscintError on any other error
 
     Examples:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>>
@@ -1404,6 +1423,7 @@ def ezuvint(gdidout, gdidin, uuin, vvin, uuout=None, vvout=None):
         EzscintError on any other error
 
     Examples:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>>
@@ -1486,6 +1506,7 @@ def gdllsval(gdid, lat, lon, zin, zout=None):
         EzscintError on any other error
 
     Examples:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>>
@@ -1570,6 +1591,7 @@ def gdxysval(gdid, xpts, ypts, zin, zout=None):
         EzscintError on any other error
 
     Examples:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>>
@@ -1651,6 +1673,7 @@ def gdllvval(gdid, lat, lon, uuin, vvin, uuout=None, vvout=None):
         EzscintError on any other error
 
     Examples:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>>
@@ -1746,6 +1769,7 @@ def gdxyvval(gdid, xpts, ypts, uuin, vvin, uuout=None, vvout=None):
         EzscintError on any other error
 
     Examples:
+
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>>
@@ -1839,6 +1863,7 @@ def gdrls(gdid):
         EzscintError on any other error
 
     Examples:
+
     >>> import rpnpy.librmn.all as rmn
     >>>
     >>> # Define a Grid
