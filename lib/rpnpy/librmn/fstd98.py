@@ -12,11 +12,11 @@ convip C functions along with helper functions
 Notes:
     The functions described below are a very close ''port'' from the
     original `librmn
-    <http://collaboration.cmc.ec.gc.ca/science/si/eng/si/libraries/>`_'s
+    <https://science:science@collaboration.cmc.ec.gc.ca/science/si/eng/si/libraries/>`_'s
     `FSTD
-    <http://collaboration.cmc.ec.gc.ca/science/si/eng/si/libraries/rmnlib/fstd89/index.html>`_
+    <http://science:science@collaboration.cmc.ec.gc.ca/science/si/eng/si/libraries/rmnlib/fstd89/index.html>`_
     package. You may want to refer to the `FSTD
-    <http://collaboration.cmc.ec.gc.ca/science/si/eng/si/libraries/rmnlib/fstd89/index.html>`_
+    <http://science:science@collaboration.cmc.ec.gc.ca/science/si/eng/si/libraries/rmnlib/fstd89/index.html>`_
     documentation for more details.
 
 See Also:
@@ -347,7 +347,7 @@ def fstcloseall(iunit, verbose=None):
         
     Example:
 
-    >>> import rpnpy.librmn.all as rmn    
+    >>> import rpnpy.librmn.all as rmn
     >>> funit = rmn.fstopenall('mynewfile.fst', rmn.FST_RW)
     >>> #...
     >>> rmn.fstcloseall(funit)
@@ -423,7 +423,7 @@ def listToFLOATIP(rp1):
 
     Example:
 
-    >>> import rpnpy.librmn.all as rmn    
+    >>> import rpnpy.librmn.all as rmn
     >>> pk1 = rmn.listToFLOATIP((500., 500., rmn.KIND_PRESSURE))
     >>> pk2 = rmn.listToFLOATIP((0.,     0., rmn.KIND_HOURS))
     >>> pk3 = rmn.listToFLOATIP((0.,     0., 0))
@@ -470,7 +470,7 @@ def FLOATIPtoList(rp1):
     >>> (ip1, ip2, ip3) = rmn.convertPKtoIP(pk1, pk2, pk3)
     >>> (rp1, rp2, rp3) = rmn.convertIPtoPK(ip1, ip2, ip3)
     >>> (v1, v2, kind) = rmn.FLOATIPtoList(rp1)
-    
+
     See Also:
         `listToFLOATIP`, `convertPKtoIP`, `convertIPtoPK`,
         rpnpy.librmn.proto.FLOAT_IP, rpnpy.librmn.const
@@ -510,7 +510,7 @@ def fstecr(iunit, data, meta=None, rewrite=True):
             Option to provide data+meta in a single dict where
             data = rec['d']
 
-        rewrite : force to overwrite any other fields with same meta 
+        rewrite : force to overwrite any other fields with same meta
 
     Returns:
         None
@@ -662,7 +662,7 @@ def fst_edit_dir(key, datev=-1, dateo=-1, deet=-1, npas=-1, ni=-1, nj=-1, nk=-1,
         TypeError: wrong input arg types
         ValueError: invalid input arg value
         FSTDError: any other error
-    
+
     Example:
 
     >>> import os, os.path, stat, shutil
@@ -684,10 +684,10 @@ def fst_edit_dir(key, datev=-1, dateo=-1, deet=-1, npas=-1, ni=-1, nj=-1, nk=-1,
     >>>
     >>> # Iterate explicitely on list of records to change the etiket
     >>> for key in mykeylist: rmn.fst_edit_dir(key, etiket='MY_NEW_ETK')
-    >>> 
+    >>>
     >>> # Could also be written as one-line list comprehension:
     >>> # [rmn.fst_edit_dir(key, etiket='MY_NEW_ETK') for key in rmn.fstinl(funit)]
-    >>> 
+    >>>
     >>> # Iterate implicitly on list of records to change the etiket
     >>> rmn.fst_edit_dir(mykeylist, etiket='MY_NEW_ETK')
     >>>
@@ -697,7 +697,7 @@ def fst_edit_dir(key, datev=-1, dateo=-1, deet=-1, npas=-1, ni=-1, nj=-1, nk=-1,
     See Also:
         `fstopenall`, `fstcloseall`, `fstinl`, `fstinf`, rpnpy.librmn.const,
         http://collaboration.cmc.ec.gc.ca/science/si/eng/si/libraries/rmnlib/fstd/
-        
+
     Notes:
         librmn_15.2 fst_edit_dir ignores ni,nj,nk,grtyp
         These parameters cannot thus be zapped.
@@ -895,12 +895,12 @@ def fstinf(iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
 
     Returns the key of the first record matching the selection
     criteria.
-    
+
     Only provided parameters with value different than default are
     used as selection criteria. Thus if you do not provide any other
     parameter that iunit, fstinf will return the key to the first
     record in the file.
-    
+
     recmatch = fstinf(iunit, ... )
 
     Args:
@@ -926,7 +926,7 @@ def fstinf(iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
         TypeError: wrong input arg types
         ValueError: invalid input arg value
         FSTDError: any other error
-        
+
     Example:
 
     >>> import os, os.path
@@ -953,7 +953,7 @@ def fstinf(iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
 def fstinfx(key, iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
             typvar=' ', nomvar=' '):
     """Locate the next record that matches the search keys.
-    
+
     Only provided parameters with value different than default are
     used as selection criteria. The search begins at the position
     given by key/handle obtained with fstinf or fstinl, ...
@@ -1186,7 +1186,7 @@ def fstlir(iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
                   Could be any numpy.ndarray type
                   See: http://docs.scipy.org/doc/numpy/user/basics.types.html
         rank    : try to return an array with the specified rank
-        dataArray (ndarray): (optional) allocated array where to put the data 
+        dataArray (ndarray): (optional) allocated array where to put the data
 
     Returns:
         None if no matching record, else::
@@ -1199,8 +1199,8 @@ def fstlir(iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
      Raises:
         TypeError  on wrong input arg types
         ValueError on invalid input arg value
-        FSTDError  on any other error       
-        
+        FSTDError  on any other error
+
     Example:
 
     >>> import os, os.path
@@ -1262,7 +1262,7 @@ def fstlirx(key, iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
         rank    : try to return an array with the specified rank
         dataArray (ndarray): (optional) allocated array where to put the data
     Returns:
-        None if no matching record, else::
+        None if no matching record, else:
 
         {
             'd'   : data,       # record data as a numpy.ndarray
@@ -1272,8 +1272,8 @@ def fstlirx(key, iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
      Raises:
         TypeError  on wrong input arg types
         ValueError on invalid input arg value
-        FSTDError  on any other error       
-        
+        FSTDError  on any other error
+
     Example:
 
     >>> import os, os.path
@@ -1329,7 +1329,7 @@ def fstlis(iunit, dtype=None, rank=None, dataArray=None):
         dataArray (ndarray): (optional) allocated array where to put the data 
 
     Returns:
-        None if no matching record, else::
+        None if no matching record, else:
 
         {
             'd'   : data,       # record data as a numpy.ndarray
@@ -1339,8 +1339,8 @@ def fstlis(iunit, dtype=None, rank=None, dataArray=None):
      Raises:
         TypeError  on wrong input arg types
         ValueError on invalid input arg value
-        FSTDError  on any other error       
-        
+        FSTDError  on any other error
+
     Example:
 
     >>> import os, os.path
@@ -1394,8 +1394,8 @@ def fstlnk(unitList):
     Raises:
         TypeError  on wrong input arg types
         ValueError on invalid input arg value
-        FSTDError  on any other error       
-        
+        FSTDError  on any other error
+
     Example:
 
     >>> import os, os.path
@@ -1471,7 +1471,7 @@ def fstluk(key, dtype=None, rank=None, dataArray=None):
         rank  : try to return an array with the specified rank
         dataArray (ndarray): (optional) allocated array where to put the data 
 
-    Returns::
+    Returns:
 
         {
             'd'   : data,       # record data as a numpy.ndarray, FORTRAN order
@@ -2440,7 +2440,7 @@ def ip3_val(level, kind):
 def convertIp(mode, v, k=0):
     """
     Code/decode P, kind ↔ IP for IP1, IP2, IP3
-    
+
     If mode > 0: ip = convertIp(mode, p, kind)
 
     If mode ≤ 0: (p, kind) = convertIp(mode, ip)
@@ -2450,7 +2450,7 @@ def convertIp(mode, v, k=0):
 
         p (float): Real Value
 
-        kind (int): Level encoding kind/code; can take the following values::
+        kind (int): Level encoding kind/code; can take the following values:
 
             0, p is height (m) above sea level (-20 000 → 100 000)
             1, p is sigma (0.0 → 1.0)
@@ -2463,7 +2463,7 @@ def convertIp(mode, v, k=0):
             15, reserve (entiers)
             17, p represente l'indice x de la matrice de conversion (1.0 → 1.0e10)(partagé avec kind=1 a cause du range exclusif
 
-        mode (int): Conversion mode; can take the following values::
+        mode (int): Conversion mode; can take the following values:
 
              -1, IP to P
              0, force conversion for ip to 31 bits (default = ip has 15 bits) (appel d'initialisation)
@@ -2481,7 +2481,7 @@ def convertIp(mode, v, k=0):
 
         ValueError: on invalid input arg value
 
-        FSTDError: any other error       
+        FSTDError: any other error
 
     Example:
 
