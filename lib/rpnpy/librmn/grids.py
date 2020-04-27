@@ -2985,8 +2985,8 @@ def yyg_yangrot_py(yinlat1, yinlon1, yinlat2, yinlon2):
     Returns:
         (yanlat1, yanlon1, yanlat2, yanlon2)
     Raises:
-        TypeError  on wrong input arg types    
-        
+        TypeError  on wrong input arg types
+
     Example:
 
     >>> import rpnpy.librmn.all as rmn
@@ -3121,8 +3121,8 @@ def egrid_rot_matrix(xlat1, xlon1, xlat2, xlon2):
     Returns:
         (yanlat1, yanlon1, yanlat2, yanlon2)
     Raises:
-        TypeError  on wrong input arg types    
-        
+        TypeError  on wrong input arg types
+
     Example:
 
     >>> import rpnpy.librmn.all as rmn
@@ -3178,8 +3178,8 @@ def egrid_rll2ll(xlat1, xlon1, xlat2, xlon2, rlat, rlon):
     Returns:
         (lat, lon)
     Raises:
-        TypeError  on wrong input arg types    
-        
+        TypeError  on wrong input arg types
+
     Example:
 
     >>> import rpnpy.librmn.all as rmn
@@ -3258,8 +3258,8 @@ def egrid_ll2rll(xlat1, xlon1, xlat2, xlon2, lat, lon):
     Returns:
         (rlat, rlon)
     Raises:
-        TypeError  on wrong input arg types    
-        
+        TypeError  on wrong input arg types
+
     Example:
 
     >>> import rpnpy.librmn.all as rmn
