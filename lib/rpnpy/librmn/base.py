@@ -24,6 +24,7 @@ See Also:
 
 import ctypes as _ct
 import numpy  as _np
+import zlib   as _zl
 from rpnpy.librmn import const as _rc
 from rpnpy.librmn import RMNError
 from rpnpy import integer_types as _integer_types
@@ -69,7 +70,7 @@ def get_funit(filename, filemode=_rc.FST_RW, iunit=0):
 
     funit = get_unit(filename, filemode, iunit=0)
 
-     Args:
+    Args:
         filename : path/name of the file to open
         filemode : a string with the desired filemode (see librmn doc)
                    or one of these constants: FST_RW, FST_RW_OLD, FST_RO
@@ -83,11 +84,11 @@ def get_funit(filename, filemode=_rc.FST_RW, iunit=0):
         RMNBaseError on any other error
 
     Notes:
-       New function in version 2.1.b2
+        New function in version 2.1.b2
 
     See also:
-       fnom
-       fclos
+        fnom
+        fclos
     """
     iunit = 0 if iunit is None else iunit
     funit = fnom(filename, filemode, iunit)
@@ -136,7 +137,7 @@ def fclos(iunit):
     return istat
 
 
-def fnom(filename, filemode=_rc.FST_RW, iunit=0):
+def fnom(filename, filemode=_rc.FST_RW, iunit=0, legacy=False):
     """
     Open a file and make the connection with a unit number.
 
@@ -146,6 +147,7 @@ def fnom(filename, filemode=_rc.FST_RW, iunit=0):
                    or one of these constants: FST_RW, FST_RW_OLD, FST_RO
         iunit    : forced unit number to conect to
                    if zero, will select a free unit
+        legacy   : fall back to legacy fnom mode for filenames if True
     Returns:
         int, Associated file unit number
     Raises:
@@ -186,6 +188,9 @@ def fnom(filename, filemode=_rc.FST_RW, iunit=0):
     if not isinstance(filemode, str):
         raise TypeError("fnom: Expecting arg filemode of type str, Got {0}"\
                         .format(type(filemode)))
+    # Prepend filename with '+' to tell librmn to preserve filename case.
+    if not (legacy or filename.startswith('+')):
+      filename = '+'+filename
     istat = _rp.c_fnom(_ct.byref(ciunit), _C_WCHAR2CHAR(filename),
                        _C_WCHAR2CHAR(filemode), 0)
     istat = _C_TOINT(istat)
@@ -194,12 +199,13 @@ def fnom(filename, filemode=_rc.FST_RW, iunit=0):
     return ciunit.value
 
 
-def wkoffit(filename):
+def wkoffit(filename, legacy=False):
     """
     Return code type of file (int)
 
     Args:
         filename : path/name of the file to examine
+        legacy   : fall back to legacy fnom mode for filenames if True
     Returns:
         int, file type code as follow:
           -3     FICHIER INEXISTANT
@@ -263,6 +269,9 @@ def wkoffit(filename):
                         "Got {0}".format(type(filename)))
     if filename.strip() == '':
         raise ValueError("wkoffit: must provide a valid filename")
+    # Prepend filename with '+' to tell librmn to preserve filename case.
+    if not (legacy or filename.startswith('+')):
+      filename = '+'+filename
     return _rp.c_wkoffit(_C_WCHAR2CHAR(filename), len(filename))
 
 
@@ -271,8 +280,8 @@ def crc32(crc, buf):
     Compute the Cyclic Redundancy Check (CRC)
 
     Args:
-       crc0 : initial crc value (int)
-       buf  : list of number to compute updated crc (numpy.ndarray of uint32)
+       crc : initial crc value (int)
+       buf : list of number to compute updated crc (numpy.ndarray of uint32)
     Returns:
        crc : computed crc value (int)
     Raises:
@@ -291,7 +300,7 @@ def crc32(crc, buf):
     """
     if not (buf.dtype == _np.uint32 and buf.flags['F_CONTIGUOUS']):
         buf = _np.asfortranarray(buf, dtype=_np.uint32)
-    return _rp.c_crc32(crc, buf, buf.size*4)
+    return _zl.crc32(buf, crc) & 0xffffffff
 
 #--- base -----------------------------------------------------------
 
@@ -357,7 +366,7 @@ def cxgaig(grtyp, xg1, xg2=0., xg3=0., xg4=0.):
     """
     Encode real grid descriptors into ig1, ig2, ig3, ig4
 
-    (ig1, ig2, ig3, ig4) = cxgaig(grtyp, gx1, xg2, xg3, xg4)
+    (ig1, ig2, ig3, ig4) = cxgaig(grtyp, xg1, xg2, xg3, xg4)
     (ig1, ig2, ig3, ig4) = cxgaig(grtyp, xg1234)
 
     Args:
@@ -736,7 +745,7 @@ def newdate(imode, idate1, idate2=0):
           odate1 : DATE OF THE PRINTABLE DATE (YYYYMMDD)
           odate2 : TIME OF THE PRINTABLE DATE (HHMMSSHH)
 
-    Note:
+    Notes:
         Old Style Date Array is composed of 14 elements:
         0 : Day of the week (1=Sunday, ..., 7=Saturday
         1 : Month (1=Jan, ..., 12=Dec)
@@ -824,7 +833,7 @@ def newdate(imode, idate1, idate2=0):
     else:
         istat = _rp.f_newdate(_ct.byref(cidate1), _ct.byref(cidate2),
                               _ct.byref(cidate3), _ct.byref(cimode))
-    if istat == 1: #TODO: check this, should it be (istat < 0)
+    if istat == 1:
         raise RMNBaseError()
     if imode == 1:
         return (cidate1.value, cidate3.value)

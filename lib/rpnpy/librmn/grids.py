@@ -5,9 +5,7 @@
 # Author: Stephane Chamberland <stephane.chamberland@canada.ca>
 # Copyright: LGPL 2.1
 
-#TODO: add ax, ax optional arg to ZE, dE, ZL, dL, U
-#TODO: add fucntions to convert between Z, # and Y grids
-#TODO: add fucntions to define YE grids
+#TODO: add ax, ax optional arg to dE, dL, U
 
 """
 Librmn Fstd grid helper functions
@@ -33,6 +31,7 @@ from rpnpy.librmn import interp as _ri
 from rpnpy.utils  import llacar as _ll
 from rpnpy.librmn import RMNError
 from rpnpy import integer_types as _integer_types
+from rpnpy import range as _range
 
 _list2ftnf32 = lambda x: x if isinstance(x, _np.ndarray) \
                            else _np.asfortranarray(x, dtype=_np.float32)
@@ -79,9 +78,14 @@ def decodeIG2dict(grtyp, ig1, ig2, ig3, ig4):
     >>> (ig1, ig2, ig3, ig4) = rmn.cxgaig(grtyp,lat0, lon0, dlat, dlon)
     >>> # Decode Grid parameters to generix xg1-4 values
     >>> params = rmn.decodeIG2dict(grtyp, ig1, ig2, ig3, ig4)
-    >>> if ((params['xg1'], params['xg2'], params['xg3'], params['xg4']) !=
-    ...     (lat0, lon0, dlat, dlon)):
-    ...     print("Problem decoding grid values.")
+    >>> if ((int((params['xg1']-lat0)*1000.), int((params['xg2']-lon0)*1000.),
+    ...      int((params['xg3']-dlat)*1000.), int((params['xg4']-dlon)*1000.))
+    ...    != (0, 0, 0, 0)):
+    ...    print("Problem decoding grid values. {} != {}"
+    ...          .format((lat0, lon0, dlat, dlon),
+    ...                  (params['xg1'], params['xg2'],
+    ...                   params['xg3'], params['xg4'])
+    ...                 ))
 
     See Also:
         decodeXG2dict
@@ -139,10 +143,16 @@ def decodeXG2dict(grtyp, xg1, xg2, xg3, xg4):
     >>> # Decode Grid parameters to generix xg1-4 values
     >>> params = rmn.decodeIG2dict(grtyp, ig1, ig2, ig3, ig4)
     >>> # Decode Grid parameters to grid specific parameters
-    >>> params = rmn.decodeXG2dict(grtyp, params['xg1'], params['xg2'], params['xg3'], params['xg4'])
-    >>> if ((params['lat0'], params['lon0'], params['dlat'], params['dlon']) !=
-    ...     (lat0, lon0, dlat, dlon)):
-    ...    print("Problem decoding grid values.")
+    >>> params = rmn.decodeXG2dict(grtyp, params['xg1'], params['xg2'],
+    ...                            params['xg3'], params['xg4'])
+    >>> if ((int((params['lat0']-lat0)*1000.), int((params['lon0']-lon0)*1000.),
+    ...      int((params['dlat']-dlat)*1000.), int((params['dlon']-dlon)*1000.))
+    ...    != (0, 0, 0, 0)):
+    ...    print("Problem decoding grid values. {} != {}"
+    ...          .format((lat0, lon0, dlat, dlon),
+    ...                  (params['xg1'], params['xg2'],
+    ...                   params['xg3'], params['xg4'])
+    ...                 ))
 
     See Also:
         decodeIG2dict
@@ -239,10 +249,15 @@ def decodeGrid(gid):
     >>> # Decode grid information
     >>> params2 = rmn.decodeGrid(params)
     >>> # Check that decoded values are identical to what we provided
-    >>> x = [params[k] == params2[k] for k in params.keys()]
-    >>> if not all(x):
-    ...     print("Problem decoding grid param[{0}] : {1} != {2} "
-    ...           .format(k,str(params[k]),str(params2[k])))
+    >>> x = [params[k] == params2[k] for k in
+    ...      ('shape', 'ni', 'nj', 'grtyp', 'ig1', 'ig2', 'ig3', 'ig4')]
+    >>> y = [int(params[k]*1000.) == int(params2[k]*1000.) for k in
+    ...      ('lat0', 'lon0', 'dlat', 'dlon')]
+    >>> if not (all(x) and all(y)):
+    ...     for k in params.keys():
+    ...        if params[k] != params2[k]:
+    ...           print("Problem decoding grid param[{0}] : {1} != {2} "
+    ...                 .format(k,str(params[k]),str(params2[k])))
 
     See Also:
         encodeGrid
@@ -251,10 +266,16 @@ def decodeGrid(gid):
         defGrid_L
         defGrid_E
         defGrid_ZL
+        defGrid_ZLaxes
         defGrid_ZE
+        defGrid_ZEr
+        defGrid_ZEraxes
         defGrid_diezeL
         defGrid_diezeE
         defGrid_YY
+        defGrid_ZPS
+        defGrid_ZPSaxes
+        defGrid_ZPSfLL
         rpnpy.librmn.base.cigaxg
         rpnpy.librmn.base.cxgaig
         rpnpy.librmn.interp.ezgprm
@@ -292,7 +313,45 @@ def decodeGrid(gid):
         for k in ('grtyp', 'ig1', 'ig2', 'ig3', 'ig4'):
             del params2[k]
         params.update(params2)
-        if params['grref'] in ('E', 'L'):
+        
+        if params['grref'] in ('N', 'S'):
+            axes = _ri.gdgaxes(gid)
+            params.update({
+                'ax'    : axes['ax'],
+                'ay'    : axes['ay']
+                })
+            if params['grtyp'] in ('Z', '#'):
+                (ni, nj) = (params['ni']-1, params['nj']-1)
+                params.update({
+                    'y0' : params['d60'] * float(axes['ay'][0, 0]),
+                    'x0' : params['d60'] * float(axes['ax'][0, 0]),
+                    'dxy' : params['d60'] * float(axes['ay'][0, nj] - axes['ay'][0, 0])/float(nj),
+                    'dxy2': params['d60'] * float(axes['ax'][ni, 0] - axes['ax'][0, 0])/float(ni),
+                    'north': params['grref'] == 'N'
+                    })
+                #TODO: if params['dxy'] - params['dxy2'] > epsilon: Error
+                for k in ('x0', 'y0', 'dxy', 'dxy2'):
+                    if k in params0.keys(): params[k] = params0[k]
+            if params['grtyp'] in ('#'):
+                #TODO: define params lni,lnj, i0,j0
+                raise RMNError('decodeGrid: Grid type not yet supported {grtyp}({grref})'.format(**params))
+            if all([x in params0.keys() for x in ('ig1', 'ig2')]):
+                params['tag1'] = params0['ig1']
+                params['tag2'] = params0['ig2']
+            else:
+                (params['tag1'], params['tag2']) = getIgTags(params)
+            params['tag3'] = 0
+            if 'ig3' in params0.keys() and params['grtyp'] != '#':
+                params['tag3'] = params0['ig3']
+            (params['ig1'], params['ig2']) = (params['tag1'], params['tag2'])
+            if params['grtyp'] in ('#'):
+                #TODO: define params ig3 ig4
+                raise RMNError('decodeGrid: Grid type not yet supported {grtyp}({grref})'.format(**params))
+            else:
+                (params['ig3'], params['ig4']) = (params['tag3'], 0)
+                if 'ig4' in params0.keys(): params['ig4'] = params0['ig4']
+
+        elif params['grref'] in ('E', 'L'):
             axes = _ri.gdgaxes(gid)
             params.update({
                 'ax'    : axes['ax'],
@@ -389,10 +448,10 @@ def getIgTags(params):
     Args:
         params     : grid parameters given as a dictionary (dict)
           {
-            'xlat1' : lat of grid center in degrees (float)
-            'xlon1' : lon of grid center in degrees (float)
-            'xlat2' : lat of a 2nd ref. point in degrees (float)
-            'xlon2' : lon of a 2nd ref. point in degrees (float)
+            'xlat1' : lat of grid center [deg] (float)
+            'xlon1' : lon of grid center [deg] (float)
+            'xlat2' : lat of a 2nd ref. point [deg] (float)
+            'xlon2' : lon of a 2nd ref. point [deg] (float)
             'ax'    : grid x-axes (numpy.ndarray)
             'ay'    : grid y-axes (numpy.ndarray)
          }
@@ -401,10 +460,10 @@ def getIgTags(params):
 
         params     : grid parameters given as a dictionary (dict)
           {
-            'lat0' : lat of grid lower-left corner in degrees (float)
-            'lon0' : lon of grid lower-left corner in degrees (float)
-            'dlat' : Grid lat resolution in degrees (float)
-            'dlon' : Grid lon resolution in degrees (float)
+            'lat0' : lat of grid lower-left corner [deg] (float)
+            'lon0' : lon of grid lower-left corner [deg] (float)
+            'dlat' : Grid lat resolution [deg] (float)
+            'dlon' : Grid lon resolution [deg] (float)
             'ax'    : grid x-axes (numpy.ndarray)
             'ay'    : grid y-axes (numpy.ndarray)
          }
@@ -428,7 +487,12 @@ def getIgTags(params):
 
     See Also:
         defGrid_ZE
+        defGrid_ZEr
+        defGrid_ZEraxes
         rpnpy.librmn.base.crc32
+        defGrid_ZPS
+        defGrid_ZPSaxes
+        defGrid_ZPSfLL
     """
     try:
         if params['ax'].shape == params['ay'].shape:
@@ -438,13 +502,19 @@ def getIgTags(params):
             a = params['ax'][:, 0].tolist()
             a.extend(params['ay'][0, :].tolist())
     except:
-        a = params['axy'].tolist()
+        if 'axy' in params:
+            a = params['axy'].tolist()
+        else:
+            a = [0.,]
     try:
         a.extend([params['xlat1'], params['xlon1'],
                   params['xlat2'], params['xlon2']])
     except:
-        a.extend([params['lat0'], params['lon0'],
-                  params['dlat'], params['dlon']])
+        if all([x in params.keys() for x in ('lat0', 'lon0', 'dlat', 'dlon')]):
+            a.extend([params['lat0'], params['lon0'],
+                      params['dlat'], params['dlon']])
+        elif all([x in params.keys() for x in ('pi', 'pj', 'dgrw')]):
+            a.extend([params['pi'], params['pj'], params['dgrw']])
     a = [int(x*1000.) for x in a]
     aa = _np.array(a, dtype=_np.uint32)
     crc = _rb.crc32(0, aa)
@@ -619,6 +689,10 @@ def writeGrid(funit, params):
     rec['ig3'] = params['ig3ref']
     rec['ig4'] = params['ig4ref']
     try:
+        rec['datyp'] = params['datyp']
+    except KeyError:
+        rec['datyp'] = _rc.FST_DATYP_LIST['float_IEEE']
+    try:
         rec['nbits'] = params['nbits']
     except KeyError:
         rec['nbits'] = 32
@@ -713,11 +787,17 @@ def encodeGrid(params):
         defGrid_L
         defGrid_E
         defGrid_ZL
+        defGrid_ZLaxes
         defGrid_ZE
+        defGrid_ZEr
+        defGrid_ZEraxes
         defGrid_diezeL
         defGrid_diezeE
         defGrid_YL
         defGrid_YY
+        defGrid_ZPS
+        defGrid_ZPSaxes
+        defGrid_ZPSfLL
     """
     try:
         params['grtyp'] = params['grtyp'].strip().upper()
@@ -738,15 +818,32 @@ def encodeGrid(params):
     elif params['grtyp'] == 'U':
         return defGrid_YY(params)
     elif params['grtyp'] == 'Z' and  params['grref'] == 'E':
-        return defGrid_ZE(params)
+        if 'ax' in params.keys() and 'ay' in params.keys():
+            return defGrid_ZEraxes(params)
+        elif 'rlat0' in params.keys() and 'rlon0' in params.keys():
+            return defGrid_ZEr(params)
+        else:
+            return defGrid_ZE(params)
     elif params['grtyp'] == '#' and  params['grref'] == 'E':
         return defGrid_diezeE(params)
     elif params['grtyp'] == 'Z' and  params['grref'] == 'L':
-        return defGrid_ZL(params)
+        if 'ax' in params.keys() and 'ay' in params.keys():
+            return defGrid_ZLaxes(params)
+        else:
+            return defGrid_ZL(params)
     elif params['grtyp'] == '#' and  params['grref'] == 'L':
         return defGrid_diezeL(params)
     elif params['grtyp'] == 'Y' and  params['grref'] == 'L':
         return defGrid_YL(params)
+    elif params['grtyp'] == 'Z' and  params['grref'] in ('N', 'S'):
+        params['north'] = params['grref'] == 'N'
+        if 'ax' in params.keys() and 'ay' in params.keys():
+            return defGrid_ZPSaxes(params)
+        elif 'lat0' in params.keys() and 'lon0' in params.keys():
+            return defGrid_ZPSfLL(params)
+        else:
+            return defGrid_ZPS(params)
+    #TODO: add support for #/PS grids
     else:
         raise RMNError('encodeGrid: Grid type not yet supported {grtyp}({grref})'.format(**params))
 
@@ -763,9 +860,9 @@ def defGrid_L(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
 
     Args:
         ni, nj     : grid dims (int)
-        lat0, lon0 : lat, lon of SW grid corner in degrees (float)
+        lat0, lon0 : lat, lon of SW grid corner [deg] (float)
         dlat, dlon : grid resolution/spacing along lat, lon axes
-                     in degrees (float)
+                     [deg] (float)
         setGridId  : Flag for creation of gid, ezscint grid id (True or False)
         params     : above parameters given as a dictionary (dict)
     Returns:
@@ -774,10 +871,10 @@ def defGrid_L(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
             'ni'    : grid dim along the x-axis (int)
             'nj'    : grid dim along the y-axis (int)
             'grtyp' : grid type (str)
-            'lat0'  : lat of SW grid corner in degrees (float)
-            'lon0'  : lon of SW grid corner in degrees (float)
-            'dlat'  : grid resolution/spacing along lat axe in degrees (float)
-            'dlon'  : grid resolution/spacing along lon axe in degrees (float)
+            'lat0'  : lat of SW grid corner [deg] (float)
+            'lon0'  : lon of SW grid corner [deg] (float)
+            'dlat'  : grid resolution/spacing along lat axe [deg] (float)
+            'dlon'  : grid resolution/spacing along lon axe [deg] (float)
             'ig1'   : grid parameters, encoded (int)
             'ig2'   : grid parameters, encoded (int)
             'ig3'   : grid parameters, encoded (int)
@@ -853,13 +950,13 @@ def defGrid_E(ni, nj=None, xlat1=None, xlon1=None, xlat2=None, xlon2=None,
 
     Args:
         ni, nj      : grid dims (int)
-        xlat1, xlon1 : lat, lon of the grid center in degrees (float)
+        xlat1, xlon1 : lat, lon of the grid center [deg] (float)
                       This defines, in rotated coor., (rlat, rlon) = (0., 180.)
                       on the rotated equator
                       The grid is defined, in rotated coor on
                       rlat: -90. to +90. degrees
                       rlon:   0. to 360. degrees
-        xlat2, xlon2 : lat, lon of a 2nd ref. point in degrees (float)
+        xlat2, xlon2 : lat, lon of a 2nd ref. point [deg] (float)
                       This point is considered to be on the rotated equator,
                       east of xlat1, xlon1 (it thus defines the rotation)
         setGridId   : Flag for creation of gid, ezscint grid id (True or False)
@@ -870,10 +967,10 @@ def defGrid_E(ni, nj=None, xlat1=None, xlon1=None, xlat2=None, xlon2=None,
             'ni'    : grid dim along the x-axis (int)
             'nj'    : grid dim along the y-axis (int)
             'grtyp' : grid type (str)
-            'xlat1' : lat of grid center in degrees (float)
-            'xlon1' : lon of grid center in degrees (float)
-            'xlat2' : lat of a 2nd ref. point in degrees (float)
-            'xlon2' : lon of a 2nd ref. point in degrees (float)
+            'xlat1' : lat of grid center [deg] (float)
+            'xlon1' : lon of grid center [deg] (float)
+            'xlat2' : lat of a 2nd ref. point [deg] (float)
+            'xlon2' : lon of a 2nd ref. point [deg] (float)
             'ig1'   : grid parameters, encoded (int)
             'ig2'   : grid parameters, encoded (int)
             'ig3'   : grid parameters, encoded (int)
@@ -955,17 +1052,17 @@ def defGrid_ZE(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
 
     Args:
         ni, nj       : grid dims (int)
-        lat0, lon0   : lat, lon of SW grid corner in degrees
+        lat0, lon0   : lat, lon of SW grid corner [deg]
                        (not rotated coor.) (float)
         dlat, dlon   : grid resolution/spacing along lat, lon on rotated axes
-                       in degrees (float)
-        xlat1, xlon1 : lat, lon of the grid center in degrees (float)
+                       [deg] (float)
+        xlat1, xlon1 : lat, lon of the grid center [deg] (float)
                        This defines, in rotated coor., (rlat, rlon) = (0., 180.)
                        on the rotated equator
                        The grid is defined, in rotated coor on
                        rlat: -90. to +90. degrees
                        rlon:   0. to 360. degrees
-        xlat2, xlon2 : lat, lon of a 2nd ref. point in degrees (float)
+        xlat2, xlon2 : lat, lon of a 2nd ref. point [deg] (float)
                        This point is considered to be on the rotated equator,
                        east of xlat1, xlon1 (it thus defines the rotation)
         setGridId    : Flag for creation of gid, ezscint grid id (True or False)
@@ -987,16 +1084,16 @@ def defGrid_ZE(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
             'ig2ref' : ref grid parameters, encoded (int)
             'ig3ref' : ref grid parameters, encoded (int)
             'ig4ref' : ref grid parameters, encoded (int)
-            'lat0'   : lat of SW grid corner in degrees (float)
-            'lon0'   : lon of SW grid corner in degrees (float)
-            'rlat0'  : lat of SW grid corner in degrees (rotated coor.) (float)
-            'rlon0'  : lon of SW grid corner in degrees (rotated coor.) (float)
-            'dlat'   : grid resolution/spacing along lat axe in degrees (float)
-            'dlon'   : grid resolution/spacing along lon axe in degrees (float)
-            'xlat1'  : lat of grid center in degrees (float)
-            'xlon1'  : lon of grid center in degrees (float)
-            'xlat2'  : lat of a 2nd ref. point in degrees (float)
-            'xlon2'  : lon of a 2nd ref. point in degrees (float)
+            'lat0'   : lat of SW grid corner [deg] (float)
+            'lon0'   : lon of SW grid corner [deg] (float)
+            'rlat0'  : lat of SW grid corner [deg] (rotated coor.) (float)
+            'rlon0'  : lon of SW grid corner [deg] (rotated coor.) (float)
+            'dlat'   : grid resolution/spacing along lat axe [deg] (float)
+            'dlon'   : grid resolution/spacing along lon axe [deg] (float)
+            'xlat1'  : lat of grid center [deg] (float)
+            'xlon1'  : lon of grid center [deg] (float)
+            'xlat2'  : lat of a 2nd ref. point [deg] (float)
+            'xlon2'  : lon of a 2nd ref. point [deg] (float)
             'ax'     : points longitude, in rotated coor. (numpy, ndarray)
             'ay'     : points latitudes, in rotated coor. (numpy, ndarray)
             'id'     : ezscint grid-id if setGridId==True, -1 otherwise (int)
@@ -1024,8 +1121,11 @@ def defGrid_ZE(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
     >>> params = rmn.defGrid_ZE(params0)
 
     See Also:
-        defGrid_ZEr
         defGrid_E
+        defGrid_ZEr
+        defGrid_ZEraxes
+        defGrid_L
+        defGrid_Laxes
         decodeGrid
         encodeGrid
         egrid_ll2rll
@@ -1065,25 +1165,25 @@ def defGrid_ZEr(ni, nj=None, rlat0=None, rlon0=None, dlat=None, dlon=None,
     Defines an FSTD LAM, rotated, LatLon (cylindrical equidistant) Grid
 
     gridParams = defGrid_ZEr(ni, nj, rlat0, rlon0, dlat, dlon,
-                            xlat1, xlon1, xlat2, xlon2, setGridId)
+                             xlat1, xlon1, xlat2, xlon2, setGridId)
     gridParams = defGrid_ZEr(ni, nj, rlat0, rlon0, dlat, dlon,
-                            xlat1, xlon1, xlat2, xlon2)
+                             xlat1, xlon1, xlat2, xlon2)
     gridParams = defGrid_ZEr(params, setGridId=setGridId)
     gridParams = defGrid_ZEr(params)
 
     Args:
         ni, nj       : grid dims (int)
-        rlat0, rlon0 : lat, lon of SW grid corner in degrees
+        rlat0, rlon0 : lat, lon of SW grid corner [deg]
                        (rotated coor.) (float)
         dlat, dlon   : grid resolution/spacing along lat, lon on rotated axes
-                       in degrees (float)
-        xlat1, xlon1 : lat, lon of the grid center in degrees (float)
+                       [deg] (float)
+        xlat1, xlon1 : lat, lon of the grid center [deg] (float)
                        This defines, in rotated coor., (rlat, rlon) = (0., 180.)
                        on the rotated equator
                        The grid is defined, in rotated coor on
                        rlat: -90. to +90. degrees
                        rlon:   0. to 360. degrees
-        xlat2, xlon2 : lat, lon of a 2nd ref. point in degrees (float)
+        xlat2, xlon2 : lat, lon of a 2nd ref. point [deg] (float)
                        This point is considered to be on the rotated equator,
                        east of xlat1, xlon1 (it thus defines the rotation)
         setGridId    : Flag for creation of gid, ezscint grid id (True or False)
@@ -1105,18 +1205,18 @@ def defGrid_ZEr(ni, nj=None, rlat0=None, rlon0=None, dlat=None, dlon=None,
             'ig2ref' : ref grid parameters, encoded (int)
             'ig3ref' : ref grid parameters, encoded (int)
             'ig4ref' : ref grid parameters, encoded (int)
-            'lat0'   : lat of SW grid corner in degrees (float)
-            'lon0'   : lon of SW grid corner in degrees (float)
-            'rlat0'  : lat of SW grid corner in degrees (rotated coor.) (float)
-            'rlon0'  : lon of SW grid corner in degrees (rotated coor.) (float)
-            'dlat'   : grid resolution/spacing along lat axe in degrees (float)
-            'dlon'   : grid resolution/spacing along lon axe in degrees (float)
-            'xlat1'  : lat of grid center in degrees (float)
-            'xlon1'  : lon of grid center in degrees (float)
-            'xlat2'  : lat of a 2nd ref. point in degrees (float)
-            'xlon2'  : lon of a 2nd ref. point in degrees (float)
-            'ax'     : points longitude, in rotated coor. (numpy, ndarray)
-            'ay'     : points latitudes, in rotated coor. (numpy, ndarray)
+            'lat0'   : lat of SW grid corner [deg] (float)
+            'lon0'   : lon of SW grid corner [deg] (float)
+            'rlat0'  : lat of SW grid corner [deg] (rotated coor.) (float)
+            'rlon0'  : lon of SW grid corner [deg] (rotated coor.) (float)
+            'dlat'   : grid resolution/spacing along lat axe [deg] (float)
+            'dlon'   : grid resolution/spacing along lon axe [deg] (float)
+            'xlat1'  : lat of grid center [deg] (float)
+            'xlon1'  : lon of grid center [deg] (float)
+            'xlat2'  : lat of a 2nd ref. point [deg] (float)
+            'xlon2'  : lon of a 2nd ref. point [deg] (float)
+            'ax'     : points longitude, in rotated coor. [deg] (numpy, ndarray)
+            'ay'     : points latitudes, in rotated coor. [deg] (numpy, ndarray)
             'id'     : ezscint grid-id if setGridId==True, -1 otherwise (int)
         }
     Raises:
@@ -1142,8 +1242,9 @@ def defGrid_ZEr(ni, nj=None, rlat0=None, rlon0=None, dlat=None, dlon=None,
     >>> params = rmn.defGrid_ZEr(params0)
 
     See Also:
-        defGrid_ZE
         defGrid_E
+        defGrid_ZE
+        defGrid_ZEraxes
         decodeGrid
         encodeGrid
         egrid_ll2rll
@@ -1167,8 +1268,7 @@ def defGrid_ZEr(ni, nj=None, rlat0=None, rlon0=None, dlat=None, dlon=None,
             setGridId = ni['setGridId']
         except:
             pass
-    params['grtyp'] = 'Z'
-    params['grref'] = 'E'
+
     for k in ('ni', 'nj'):
         v = params[k]
         if not isinstance(v, _integer_types):
@@ -1196,30 +1296,182 @@ def defGrid_ZEr(ni, nj=None, rlat0=None, rlon0=None, dlat=None, dlon=None,
             raise TypeError('defGrid_ZE: wrong input data type for ' +
                             '{0}, expecting float, Got ({1})'.format(k, type(v)))
         params[k] = v
+
+    params['ax'] = _np.reshape(
+        _np.fromiter((params['rlon0'] + float(x)*params['dlon']
+                     for x in _range(params['ni'])),
+                     _np.float32, params['ni']),
+        (params['ni'], 1), order='F')
+    params['ay'] = _np.reshape(
+        _np.fromiter((params['rlat0'] + float(x)*params['dlat']
+                     for x in _range(params['nj'])),
+                     _np.float32, params['nj']),
+        (1, params['nj']), order='F')
+
+    params0 = params.copy()
+    params = defGrid_ZEraxes(params, setGridId=setGridId)
+    for x in ('rlat0', 'rlon0', 'dlat', 'dlon'):
+        params[x] = params0[x]
+
+    return params
+
+
+def defGrid_ZEraxes(ax, ay=None, xlat1=None, xlon1=None,
+                    xlat2=None, xlon2=None, setGridId=True):
+    """
+    Defines an FSTD LAM, rotated, LatLon (cylindrical equidistant) Grid
+    from provided rotated axes
+
+    gridParams = defGrid_ZEraxes(ax, ay, xlat1, xlon1,
+                                 xlat2, xlon2, setGridId)
+    gridParams = defGrid_ZEraxes(ax, ay, xlat1, xlon1, xlat2, xlon2)
+    gridParams = defGrid_ZEraxes(params, setGridId=setGridId)
+    gridParams = defGrid_ZEraxes(params)
+
+    Args:
+        ax           : longitude of the grid points [deg]
+                       (rotated coor.) (float)
+        ay           : latitudes of the grid points [deg]
+                       (rotated coor.) (float)
+        xlat1, xlon1 : lat, lon of the grid center [deg] (float)
+                       This defines, in rotated coor., (rlat, rlon) = (0., 180.)
+                       on the rotated equator
+                       The grid is defined, in rotated coor on
+                       rlat: -90. to +90. degrees
+                       rlon:   0. to 360. degrees
+        xlat2, xlon2 : lat, lon of a 2nd ref. point [deg] (float)
+                       This point is considered to be on the rotated equator,
+                       east of xlat1, xlon1 (it thus defines the rotation)
+        setGridId    : Flag for creation of gid, ezscint grid id (True or False)
+        params       : above parameters given as a dictionary (dict)
+    Returns:
+        {
+            'shape'  : (ni, nj) # dimensions of the grid
+            'ni'     : grid dim along the x-axis (int)
+            'nj'     : grid dim along the y-axis (int)
+            'grtyp'  : grid type (Z) (str)
+            'tag1'   : grid tag 1 (int)
+            'tag2'   : grid tag 2 (int)
+            'ig1'    : grid tag 1 (int), =tag1
+            'ig2'    : grid tag 2 (int), =tag2
+            'ig3'    : grid tag 3 (int)
+            'ig4'    : grid tag 4, unused (set to 0) (int)
+            'grref'  : ref grid type (E) (str)
+            'ig1ref' : ref grid parameters, encoded (int)
+            'ig2ref' : ref grid parameters, encoded (int)
+            'ig3ref' : ref grid parameters, encoded (int)
+            'ig4ref' : ref grid parameters, encoded (int)
+            'lat0'   : lat of SW grid corner [deg] (float)
+            'lon0'   : lon of SW grid corner [deg] (float)
+            'rlat0'  : lat of SW grid corner [deg] (rotated coor.) (float)
+            'rlon0'  : lon of SW grid corner [deg] (rotated coor.) (float)
+            'dlat'   : avg grid resolution/spacing along lat axe [deg] (float)
+            'dlon'   : avg grid resolution/spacing along lon axe [deg] (float)
+            'xlat1'  : lat of grid center [deg] (float)
+            'xlon1'  : lon of grid center [deg] (float)
+            'xlat2'  : lat of a 2nd ref. point [deg] (float)
+            'xlon2'  : lon of a 2nd ref. point [deg] (float)
+            'ax'     : points longitude, in rotated coor. [deg] (numpy, ndarray)
+            'ay'     : points latitudes, in rotated coor. [deg] (numpy, ndarray)
+            'id'     : ezscint grid-id if setGridId==True, -1 otherwise (int)
+        }
+    Raises:
+        TypeError  on wrong input arg types
+        ValueError on invalid input arg value
+        RMNError   on any other error
+
+    Examples:
+    >>> import rpnpy.librmn.all as rmn
+    >>> (ni, nj) = (90, 45)
+    >>> (rlat0, rlon0) = (10., 11.)
+    >>> (dlat, dlon) = (1., 0.5)
+    >>> ax = [rlon0 + dlon*float(x) for x in range(ni)]
+    >>> ay = ([rlat0 + dlat*float(x) for x in range(nj)])
+    >>> params0 = {
+    ...     'ax'    : ax,
+    ...     'ay'    : ay,
+    ...     'xlat1' : 0.,
+    ...     'xlon1' : 180.,
+    ...     'xlat2' : 1.,
+    ...     'xlon2' : 270.
+    ...     }
+    >>> params = rmn.defGrid_ZEraxes(params0)
+    >>> print("ni, nj = {ni}, {nj}".format(**params))
+    ni, nj = 90, 45
+    >>> (rlat0, rlon0) = (int(params['rlat0']*10.), int(params['rlon0']*10.))
+    >>> print("rlat0, rlon0 = {}, {}".format(rlat0, rlon0))
+    rlat0, rlon0 = 100, 110
+    >>> (dlat, dlon) = (int(params['dlat']*10.), int(params['dlon']*10.))
+    >>> print("dlat, dlon = {}, {}".format(dlat, dlon))
+    dlat, dlon = 10, 5
+
+    See Also:
+        defGrid_E
+        defGrid_ZE
+        defGrid_ZEr
+        defGrid_L
+        decodeGrid
+        encodeGrid
+        egrid_ll2rll
+        egrid_rll2ll
+    """
+    params = {
+        'ax'    : ax,
+        'ay'    : ay,
+        'xlat1' : xlat1,
+        'xlon1' : xlon1,
+        'xlat2' : xlat2,
+        'xlon2' : xlon2
+        }
+    if isinstance(ax, dict):
+        params.update(ax)
+        try:
+            setGridId = ax['setGridId']
+        except:
+            pass
+    for k in ('xlat1', 'xlon1', 'xlat2', 'xlon2'):
+        try:
+            v = params[k]
+        except:
+            raise TypeError('defGrid_ZE: provided incomplete grid ' +
+                            'description, missing: {0}'.format(k))
+        if isinstance(v, _integer_types):
+            v = float(v)
+        if not isinstance(v, (float, _np.float32)):
+            raise TypeError('defGrid_ZE: wrong input data type for ' +
+                            '{0}, expecting float, Got ({1})'.format(k, type(v)))
+        params[k] = v
+
+    params['ax'] = _list2ftnf32(params['ax'])
+    params['ay'] = _list2ftnf32(params['ay'])
+    params['ax'] = params['ax'].reshape((params['ax'].size, 1))
+    params['ay'] = params['ay'].reshape((1, params['ay'].size))
+
+    params['grtyp'] = 'Z'
+    params['grref'] = 'E'
+
     ig1234 = _rb.cxgaig(params['grref'], params['xlat1'], params['xlon1'],
                         params['xlat2'], params['xlon2'])
     params['ig1ref'] = ig1234[0]
     params['ig2ref'] = ig1234[1]
     params['ig3ref'] = ig1234[2]
     params['ig4ref'] = ig1234[3]
-
-    params['ax'] = _np.empty((params['ni'], 1), dtype=_np.float32,
-                             order='FORTRAN')
-    params['ay'] = _np.empty((1, params['nj']), dtype=_np.float32,
-                             order='FORTRAN')
-    (params['lat0'], params['lon0']) = \
-        egrid_rll2ll(params['xlat1'], params['xlon1'],
-                     params['xlat2'], params['xlon2'],
-                     params['rlat0'], params['rlon0'])
-    for i in range(params['ni']):
-        params['ax'][i, 0] = params['rlon0'] + float(i)*params['dlon']
-    for j in range(params['nj']):
-        params['ay'][0, j] = params['rlat0'] + float(j)*params['dlat']
-
     params['ig1'] = ig1234[0]
     params['ig2'] = ig1234[1]
     params['ig3'] = ig1234[2]
     params['ig4'] = ig1234[3]
+
+    params['ni']   = params['ax'].size
+    params['nj']   = params['ay'].size
+    params['dlat'] = (params['ay'][0,-1] - params['ay'][0,0])/(params['nj'] - 1)
+    params['dlon'] = (params['ax'][-1,0] - params['ax'][0,0])/(params['ni'] - 1)
+    params['rlat0'] = float(params['ay'][0,0])
+    params['rlon0'] = float(params['ax'][0,0])
+
+    (params['lat0'], params['lon0']) = \
+        egrid_rll2ll(params['xlat1'], params['xlon1'],
+                     params['xlat2'], params['xlon2'],
+                     params['rlat0'], params['rlon0'])
 
     params['id'] = _ri.ezgdef_fmem(params) if setGridId else -1
 
@@ -1230,6 +1482,7 @@ def defGrid_ZEr(ni, nj=None, rlat0=None, rlon0=None, dlat=None, dlon=None,
     (params['ig3'], params['ig4']) = (params['tag3'], 0)
     params['shape'] = (params['ni'], params['nj'])
     return params
+
 
 #TODO: defGrid_diezeEr
 
@@ -1251,17 +1504,17 @@ def defGrid_diezeE(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
         i0,   j0    : local tile position of first point in the full grid (int)
                       (Fotran convention, first point start at index 1)
         ni,   nj    : Full grid dims (int)
-        lat0, lon0  : lat, lon of SW Full grid corner in degrees
+        lat0, lon0  : lat, lon of SW Full grid corner [deg]
                       (not rotated coor.) (float)
         dlat, dlon  : grid resolution/spacing along lat, lon on rotated axes
-                      in degrees (float)
-        xlat1, xlon1: lat, lon of the grid center in degrees (float)
+                      [deg] (float)
+        xlat1, xlon1: lat, lon of the grid center [deg] (float)
                       This defines, in rotated coor., (rlat, rlon) = (0., 180.)
                       on the rotated equator
                       The grid is defined, in rotated coor on
                       rlat: -90. to +90. degrees
                       rlon:   0. to 360. degrees
-        xlat2, xlon2: lat, lon of a 2nd ref. point in degrees (float)
+        xlat2, xlon2: lat, lon of a 2nd ref. point [deg] (float)
                       This point is considered to be on the rotated equator,
                       east of xlat1, xlon1 (it thus defines the rotation)
         setGridId   : Flag for creation of gid, ezscint grid id (True or False)
@@ -1292,16 +1545,16 @@ def defGrid_diezeE(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
             'ig2ref' : ref grid parameters, encoded (int)
             'ig3ref' : ref grid parameters, encoded (int)
             'ig4ref' : ref grid parameters, encoded (int)
-            'lat0'   : lat of SW grid corner in degrees (float)
-            'lon0'   : lon of SW grid corner in degrees (float)
-            'rlat0'  : lat of SW grid corner in degrees (rotated coor.) (float)
-            'rlon0'  : lon of SW grid corner in degrees (rotated coor.) (float)
-            'dlat'   : grid resolution/spacing along lat axe in degrees (float)
-            'dlon'   : grid resolution/spacing along lon axe in degrees (float)
-            'xlat1'  : lat of grid center in degrees (float)
-            'xlon1'  : lon of grid center in degrees (float)
-            'xlat2'  : lat of a 2nd ref. point in degrees (float)
-            'xlon2'  : lon of a 2nd ref. point in degrees (float)
+            'lat0'   : lat of SW grid corner [deg] (float)
+            'lon0'   : lon of SW grid corner [deg] (float)
+            'rlat0'  : lat of SW grid corner [deg] (rotated coor.) (float)
+            'rlon0'  : lon of SW grid corner [deg] (rotated coor.) (float)
+            'dlat'   : grid resolution/spacing along lat axe [deg] (float)
+            'dlon'   : grid resolution/spacing along lon axe [deg] (float)
+            'xlat1'  : lat of grid center [deg] (float)
+            'xlon1'  : lon of grid center [deg] (float)
+            'xlat2'  : lat of a 2nd ref. point [deg] (float)
+            'xlon2'  : lon of a 2nd ref. point [deg] (float)
             'ax'     : points longitude, in rotated coor. (numpy, ndarray)
             'ay'     : points latitudes, in rotated coor. (numpy, ndarray)
             'id'     : ezscint grid-id if setGridId==True, -1 otherwise (int)
@@ -1392,9 +1645,9 @@ def defGrid_ZL(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
 
     Args:
         ni, nj      : grid dims (int)
-        lat0, lon0 : lat, lon of SW grid corner in degrees (float)
+        lat0, lon0 : lat, lon of SW grid corner [deg] (float)
         dlat, dlon : grid resolution/spacing along lat, lon on rotated axes
-                     in degrees (float)
+                     [deg] (float)
         setGridId   : Flag for creation of gid, ezscint grid id (True or False)
         params      : above parameters given as a dictionary (dict)
     Returns:
@@ -1414,10 +1667,10 @@ def defGrid_ZL(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
             'ig2ref' : ref grid parameters, encoded (int)
             'ig3ref' : ref grid parameters, encoded (int)
             'ig4ref' : ref grid parameters, encoded (int)
-            'lat0'  : lat of SW grid corner in degrees (float)
-            'lon0'  : lon of SW grid corner in degrees (float)
-            'dlat'  : grid resolution/spacing along lat axe in degrees (float)
-            'dlon'  : grid resolution/spacing along lon axe in degrees (float)
+            'lat0'  : lat of SW grid corner [deg] (float)
+            'lon0'  : lon of SW grid corner [deg] (float)
+            'dlat'  : grid resolution/spacing along lat axe [deg] (float)
+            'dlon'  : grid resolution/spacing along lon axe [deg] (float)
             'ax'    : points longitude (numpy, ndarray)
             'ay'    : points latitudes (numpy, ndarray)
             'id'    : ezscint grid-id if setGridId==True, -1 otherwise (int)
@@ -1441,6 +1694,10 @@ def defGrid_ZL(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
     >>> params = rmn.defGrid_ZL(params0)
 
     See Also:
+        defGrid_ZLaxes
+        defGrid_ZE
+        defGrid_ZEr
+        defGrid_ZEraxes
         decodeGrid
         encodeGrid
     """
@@ -1458,8 +1715,6 @@ def defGrid_ZL(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
             setGridId = ni['setGridId']
         except:
             pass
-    params['grtyp'] = 'Z'
-    params['grref'] = 'L'
     for k in ('ni', 'nj'):
         v = params[k]
         if not isinstance(v, _integer_types):
@@ -1476,27 +1731,142 @@ def defGrid_ZL(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
                             '{0}, expecting float, Got ({1})'.format(k, type(v)))
         params[k] = v
     #TODO: adjust lat0,lon0 to avoid out or range?
+    params['ax'] = _np.reshape(
+        _np.fromiter((params['lon0'] + float(x)*params['dlon']
+                     for x in _range(params['ni'])),
+                     _np.float32, params['ni']),
+        (params['ni'], 1), order='F')
+    params['ay'] = _np.reshape(
+        _np.fromiter((params['lat0'] + float(x)*params['dlat']
+                     for x in _range(params['nj'])),
+                     _np.float32, params['nj']),
+        (1, params['nj']), order='F')
+    ## if params['ax'][:, 0].max() > 360.:
+    ##     params['ax'][:, 0] -= 360.
+
+    params0 = params.copy()
+    params = defGrid_ZLaxes(params, setGridId=setGridId)
+
+    for x in ('lat0', 'lon0', 'dlat', 'dlon'):
+        params[x] = params0[x]
+
+    return params
+
+
+def defGrid_ZLaxes(ax, ay=None, setGridId=True):
+    """
+    Defines an FSTD LAM LatLon (cylindrical equidistant) Grid
+    from provided axes
+
+    gridParams = defGrid_ZLaxes(ax, ay, setGridId)
+    gridParams = defGrid_ZLaxes(ax, ay)
+    gridParams = defGrid_ZLaxes(params, setGridId=setGridId)
+    gridParams = defGrid_ZLaxes(params)
+
+    Args:
+        ax        : longitude of the grid points [deg] (float)
+        ay        : latitudes of the grid points [deg] (float)
+        setGridId : Flag for creation of gid, ezscint grid id (True or False)
+        params    : above parameters given as a dictionary (dict)
+    Returns:
+        {
+            'shape' : (ni, nj) # dimensions of the grid
+            'ni'    : grid dim along the x-axis (int)
+            'nj'    : grid dim along the y-axis (int)
+            'grtyp' : grid type (Z) (str)
+            'tag1'  : grid tag 1 (int)
+            'tag2'  : grid tag 2 (int)
+            'ig1'   : grid tag 1 (int), =tag1
+            'ig2'   : grid tag 2 (int), =tag2
+            'ig3'   : grid tag 3 (int)
+            'ig4'   : grid tag 4, unused (set to 0) (int)
+            'grref' : ref grid type (L) (str)
+            'ig1ref' : ref grid parameters, encoded (int)
+            'ig2ref' : ref grid parameters, encoded (int)
+            'ig3ref' : ref grid parameters, encoded (int)
+            'ig4ref' : ref grid parameters, encoded (int)
+            'lat0'  : lat of SW grid corner [deg] (float)
+            'lon0'  : lon of SW grid corner [deg] (float)
+            'dlat'  : avg grid resolution/spacing along lat axe [deg] (float)
+            'dlon'  : avg grid resolution/spacing along lon axe [deg] (float)
+            'ax'    : points longitude [deg] (numpy, ndarray)
+            'ay'    : points latitudes [deg] (numpy, ndarray)
+            'id'    : ezscint grid-id if setGridId==True, -1 otherwise (int)
+        }
+    Raises:
+        TypeError  on wrong input arg types
+        ValueError on invalid input arg value
+        RMNError   on any other error
+
+    Examples:
+    >>> import rpnpy.librmn.all as rmn
+    >>> import rpnpy.librmn.all as rmn
+    >>> (ni, nj) = (90, 45)
+    >>> (lat0, lon0) = (10., 11.)
+    >>> (dlat, dlon) = (1., 0.5)
+    >>> ax = [lon0 + dlon*float(x) for x in range(ni)]
+    >>> ay = ([lat0 + dlat*float(x) for x in range(nj)])
+    >>> params0 = {
+    ...     'ax'    : ax,
+    ...     'ay'    : ay,
+    ...     'xlat1' : 0.,
+    ...     'xlon1' : 180.,
+    ...     'xlat2' : 1.,
+    ...     'xlon2' : 270.
+    ...     }
+    >>> params = rmn.defGrid_ZLaxes(params0)
+    >>> print("ni, nj = {ni}, {nj}".format(**params))
+    ni, nj = 90, 45
+    >>> (lat0, lon0) = (int(params['lat0']*10.), int(params['lon0']*10.))
+    >>> print("lat0, lon0 = {}, {}".format(lat0, lon0))
+    lat0, lon0 = 100, 110
+    >>> (dlat, dlon) = (int(params['dlat']*10.), int(params['dlon']*10.))
+    >>> print("dlat, dlon = {}, {}".format(dlat, dlon))
+    dlat, dlon = 10, 5
+
+    See Also:
+        defGrid_ZL
+        defGrid_ZE
+        defGrid_ZEr
+        defGrid_ZEraxes
+        decodeGrid
+        encodeGrid
+    """
+    params = {
+        'ax'    : ax,
+        'ay'    : ay
+         }
+    if isinstance(ax, dict):
+        params.update(ax)
+        try:
+            setGridId = ax['setGridId']
+        except:
+            pass
+
+    params['ax'] = _list2ftnf32(params['ax'])
+    params['ay'] = _list2ftnf32(params['ay'])
+    params['ax'] = params['ax'].reshape((params['ax'].size, 1))
+    params['ay'] = params['ay'].reshape((1, params['ay'].size))
+
+    params['grtyp'] = 'Z'
+    params['grref'] = 'L'
+
     ig1234 = _rb.cxgaig(params['grref'], 0., 0., 1., 1.)
     params['ig1ref'] = ig1234[0]
     params['ig2ref'] = ig1234[1]
     params['ig3ref'] = ig1234[2]
     params['ig4ref'] = ig1234[3]
-
-    params['ax'] = _np.empty((params['ni'], 1), dtype=_np.float32,
-                             order='FORTRAN')
-    params['ay'] = _np.empty((1, params['nj']), dtype=_np.float32,
-                             order='FORTRAN')
-    for i in range(params['ni']):
-        params['ax'][i, 0] = params['lon0'] + float(i)*params['dlon']
-    for j in range(params['nj']):
-        params['ay'][0, j] = params['lat0'] + float(j)*params['dlat']
-    ## if params['ax'][:, 0].max() > 360.:
-    ##     params['ax'][:, 0] -= 360.
-
     params['ig1'] = ig1234[0]
     params['ig2'] = ig1234[1]
     params['ig3'] = ig1234[2]
     params['ig4'] = ig1234[3]
+
+    params['ni']   = params['ax'].size
+    params['nj']   = params['ay'].size
+    params['dlat'] = (params['ay'][0,-1] - params['ay'][0,0])/(params['nj'] - 1)
+    params['dlon'] = (params['ax'][-1,0] - params['ax'][0,0])/(params['ni'] - 1)
+    params['lat0'] = params['ay'][0,0]
+    params['lon0'] = params['ax'][0,0]
 
     params['id'] = _ri.ezgdef_fmem(params) if setGridId else -1
 
@@ -1526,8 +1896,8 @@ def defGrid_diezeL(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
         i0,   j0   : local tile position of first point in the full grid (int)
                      (Fotran convention, first point start at index 1)
         ni,   nj   : Full grid dims (int)
-        lat0, lon0 : lat, lon of SW Full grid corner in degrees (float)
-        dlat, dlon : grid resolution/spacing along lat, lon in degrees (float)
+        lat0, lon0 : lat, lon of SW Full grid corner [deg] (float)
+        dlat, dlon : grid resolution/spacing along lat, lon [deg] (float)
         setGridId   : Flag for creation of gid, ezscint grid id (True or False)
         params      : above parameters given as a dictionary (dict)
     Returns:
@@ -1556,9 +1926,9 @@ def defGrid_diezeL(ni, nj=None, lat0=None, lon0=None, dlat=None, dlon=None,
             'ig2ref' : ref grid parameters, encoded (int)
             'ig3ref' : ref grid parameters, encoded (int)
             'ig4ref' : ref grid parameters, encoded (int)
-            'lat0'  : lat of SW grid corner in degrees (float)
-            'lon0'  : lon of SW grid corner in degrees (float)
-            'dlat'  : grid resolution/spacing along lat axe in degrees (float)
+            'lat0'  : lat of SW grid corner [deg] (float)
+            'lon0'  : lon of SW grid corner [deg] (float)
+            'dlat'  : grid resolution/spacing along lat axe [deg] (float)
             'ax'    : points longitude (numpy, ndarray)
             'ay'    : points latitudes (numpy, ndarray)
             'id'    : ezscint grid-id if setGridId==True, -1 otherwise (int)
@@ -1643,8 +2013,8 @@ def defGrid_YL(ax, ay=None, setGridId=True):
     gridParams = defGrid_YL(params)
 
     Args:
-        ax          : lon of the grid points in degrees (list, numpy.ndarray)
-        ay          : lat of the grid points in degrees (list, numpy.ndarray)
+        ax          : lon of the grid points [deg] (list, numpy.ndarray)
+        ay          : lat of the grid points [deg] (list, numpy.ndarray)
         setGridId   : Flag for creation of gid, ezscint grid id (True or False)
         params      : above parameters given as a dictionary (dict)
     Returns:
@@ -1832,10 +2202,10 @@ def defGrid_PS(ni, nj=None, north=True, pi=None, pj=None, d60=None,
 
     Args:
         ni, nj    : grid dims (int)
-        pi        : Horizontal position of the pole, (float
+        pi        : Horizontal position of the pole, (float)
                     in grid points, from bottom left corner (1, 1).
                     (Fotran convention, first point start at index 1)
-        pj        : Vertical position of the pole, (float
+        pj        : Vertical position of the pole, (float)
                     in grid points, from bottom left corner (1, 1).
                     (Fotran convention, first point start at index 1)
         d60       : grid length, in meters, at 60deg. of latitude. (float)
@@ -1881,6 +2251,9 @@ def defGrid_PS(ni, nj=None, north=True, pi=None, pj=None, d60=None,
     >>> params = rmn.defGrid_PS(90, 45, north=True, pi=45, pj=30, d60=5000., dgrw=270.)
 
     See Also:
+        defGrid_ZPS
+        defGrid_ZPSaxes
+        defGrid_ZPSfLL
         decodeGrid
         encodeGrid
     """
@@ -1930,6 +2303,512 @@ def defGrid_PS(ni, nj=None, north=True, pi=None, pj=None, d60=None,
     return params
 
 
+def defGrid_PSstd(north=True, dgrw=0.):
+    """
+    Define a Standardized Polar stereographic grid
+    for the northern or southern hemisphere with specifed DGRW
+
+    The Standardized grid is a 10x10 1km resolution with
+    Pole located at the Lower-Left corner.
+
+    gridParams = defGrid_PSstd(north, dgrw)
+    gridParams = defGrid_PSstd(dgrw)
+    gridParams = defGrid_PSstd()
+
+    Args:
+        north     : True for northern hemisphere,
+                    False for Southern
+        dgrw      : angle (between 0 and 360, +ve counterclockwise)
+                    between the Greenwich meridian and the horizontal
+                    axis of the grid. (float)
+    Returns:
+        {
+            'shape' : (ni, nj) # dimensions of the grid
+            'ni'    : grid dim along the x-axis (int)
+            'nj'    : grid dim along the y-axis (int)
+            'grtyp' : grid type (str)
+            'pi'    : Horizontal position of the pole, (float
+                      in grid points, from bottom left corner (1, 1).
+                      (Fotran convention, first point start at index 1)
+            'pj'    : Vertical position of the pole, (float
+                      in grid points, from bottom left corner (1, 1).
+                      (Fotran convention, first point start at index 1)
+            'd60'   : grid length, in meters, at 60deg. of latitude. (float)
+            'dgrw'  : angle (between 0 and 360, +ve counterclockwise)
+                      between the Greenwich meridian and the horizontal
+                      axis of the grid. (float)
+            'north' : True for northern hemisphere,
+                      False for Southern
+            'ig1'   : grid parameters, encoded (int)
+            'ig2'   : grid parameters, encoded (int)
+            'ig3'   : grid parameters, encoded (int)
+            'ig4'   : grid parameters, encoded (int)
+            'id'    : ezscint grid-id if setGridId==True, -1 otherwise (int)
+        }
+    Raises:
+        TypeError  on wrong input arg types
+        ValueError on invalid input arg value
+        RMNError   on any other error
+
+    Examples:
+    >>> import rpnpy.librmn.all as rmn
+    >>> params = rmn.defGrid_PSstd(dgrw=15.)
+
+    See Also:
+        defGrid_PS
+        defGrid_ZPS
+        defGrid_ZPSaxes
+        defGrid_ZPSfLL
+        decodeGrid
+        encodeGrid
+    """
+    d60 = 1000.
+    ni1, nj1 = 10, 10 
+    return defGrid_PS(ni1, nj1, north=True, pi=0., pj=0., d60=d60,
+                      dgrw=dgrw, setGridId=True)
+
+
+def defGrid_ZPSfLL(ni, nj=None, lat0=None, lon0=None, dxy=None, north=True,
+                dgrw=0., setGridId=True):
+    """
+    Define a Polar stereographic grid for the northern or southern hemisphere
+    from provided parameters
+
+    gridParams = defGrid_ZPSfLL(ni, nj, lat0, lon0, dxy, north, dgrw, setGridId)
+    gridParams = defGrid_ZPSfLL(ni, nj, lat0, lon0, dxy, dgrw)
+    gridParams = defGrid_ZPSfLL(params, setGridId=setGridId)
+    gridParams = defGrid_ZPSfLLfLL(params)
+
+    Args:
+        ni, nj    : grid dims (int)
+        lat0, lon0   : lat, lon of SW grid corner [deg] (float)
+        dxy       : grid spacing, in meters, at 60deg. of lat. (float)
+        dgrw      : angle (between 0 and 360, +ve counterclockwise)
+                    between the Greenwich meridian and the horizontal
+                    axis of the grid. (float)
+        north     : True for northern hemisphere,
+                    False for Southern
+        setGridId : Flag for creation of gid, ezscint grid id (True or False)
+        params    : above parameters given as a dictionary (dict)
+    Returns:
+        {
+            'shape' : (ni, nj) # dimensions of the grid
+            'ni'    : grid dim along the x-axis (int)
+            'nj'    : grid dim along the y-axis (int)
+            'pi'    : ref grid Horizontal position of the pole, (float)
+                      in grid points, from bottom left corner (1, 1). [0.]
+                      (Fotran convention, first point start at index 1)
+            'pj'    : ref grid Vertical position of the pole, (float)
+                      in grid points, from bottom left corner (1, 1). [0.]
+                      (Fotran convention, first point start at index 1)
+            'd60'   : ref grid spacing, in meters [1000m], at 60deg. of lat. (float)
+            'dxy'   : avg. grid spacing, in meters, at 60deg. of lat. (float)
+            'x0'    : Horizontal position, in meters, of lower left corner (1,1)
+                      from the pole in grid points (float)
+                      (Fotran convention, first point start at index 1)
+            'y0'    : Vertical position, in meters, of lower left corner (1,1)
+                      from the pole in grid points (float)
+                      (Fotran convention, first point start at index 1)
+            'dgrw'  : angle (between 0 and 360, +ve counterclockwise)
+                      between the Greenwich meridian and the horizontal
+                      axis of the grid. (float)
+            'north' : True for northern hemisphere,
+                      False for Southern
+            'grtyp' : grid type (Z) (str)
+            'tag1'  : grid tag 1 (int)
+            'tag2'  : grid tag 2 (int)
+            'ig1'   : grid tag 1 (int), =tag1
+            'ig2'   : grid tag 2 (int), =tag2
+            'ig3'   : grid tag 3 (int)
+            'ig4'   : grid tag 4, unused (set to 0) (int)
+            'grref' : ref grid type (E) (str)
+            'ig1ref': ref grid parameters, encoded (int)
+            'ig2ref': ref grid parameters, encoded (int)
+            'ig3ref': ref grid parameters, encoded (int)
+            'ig4ref': ref grid parameters, encoded (int)
+            'ax'    : points X positions [m*d60] (numpy, ndarray)
+            'ay'    : points Y positions [m*d60] (numpy, ndarray)
+            'id'    : ezscint grid-id if setGridId==True, -1 otherwise (int)
+       }
+    Raises:
+        TypeError  on wrong input arg types
+        ValueError on invalid input arg value
+        RMNError   on any other error
+
+    Examples:
+    >>> import rpnpy.librmn.all as rmn
+    >>> d60 = 1000.
+    >>> params0 = {
+    ...     'ni'    : 90,
+    ...     'nj'    : 45,
+    ...     'lat0'  : 27.,
+    ...     'lon0'  : 239.,
+    ...     'dgrw'  : 15.,
+    ...     'dxy'   : 4.8*d60  # 4.8km
+    ...     }
+    >>> params = rmn.defGrid_ZPSfLL(params0)
+    >>> print("ni, nj = {ni}, {nj}".format(**params))
+    ni, nj = 90, 45
+    >>> print("x0, y0 = {}, {}".format(int(params['x0']), int(params['y0'])))
+    x0, y0 = -2008085, -7003030
+    >>> print("dxy, d60 = {}, {}".format(int(params['dxy']), int(params['d60'])))
+    dxy, d60 = 4800, 1000
+
+    See Also:
+        defGrid_PS
+        defGrid_ZPS
+        defGrid_ZPSaxes
+        decodeGrid
+        encodeGrid
+    """
+    params = {
+        'ni'    : ni,
+        'nj'    : nj,
+        'lat0'  : lat0,
+        'lon0'  : lon0,
+        'dxy'   : dxy,
+        'north' : north,
+        'dgrw'  : dgrw
+        }
+    if isinstance(ni, dict):
+        params.update(ni)
+        try:
+            setGridId = ni['setGridId']
+        except:
+            pass
+    for k in ('ni', 'nj', 'lat0', 'lon0', 'dxy', 'north', 'dgrw'):
+        try:
+            v = params[k]
+        except:
+            raise TypeError('defGrid_ZPS: provided incomplete grid ' +
+                            'description, missing: {0}'.format(k))
+    for k in ('ni', 'nj'):
+        v = params[k]
+        if not isinstance(v, _integer_types):
+            raise TypeError('defGrid_PS: wrong input data type for ' +
+                            '{0}, expecting int, Got ({1})'.format(k, type(v)))
+        if v <= 0:
+            raise ValueError('defGrid_ZPSfLL: grid dims must be >= 0, got {0}={1}'.format(k, v))
+    for k in ('lat0', 'lon0', 'dxy', 'dgrw',):
+        v = params[k]
+        if isinstance(v, _integer_types):
+            v = float(v)
+        if not isinstance(v, (float, _np.float32)):
+            raise TypeError('defGrid_ZPSfLL: wrong input data type for ' +
+                            '{0}, expecting float, Got ({1})'.format(k, type(v)))
+        params[k] = v
+    g1 = defGrid_PSstd(north=params['north'], dgrw=params['dgrw'])
+    xy = _ri.gdxyfll(g1['id'], lat=(params['lat0'],), lon=(params['lon0'],))
+    params.update({
+        'x0'    : xy['x'][0] * g1['d60'],
+        'y0'    : xy['y'][0] * g1['d60']
+        })
+    return defGrid_ZPS(params, setGridId=setGridId)
+
+
+def defGrid_ZPS(ni, nj=None, x0=None, y0=None, dxy=None, north=True,
+                dgrw=0., setGridId=True):
+    """
+    Define a Polar stereographic grid for the northern or southern hemisphere
+    from provided parameters
+
+    gridParams = defGrid_ZPS(ni, nj, x0, y0, dxy, north, dgrw, setGridId)
+    gridParams = defGrid_ZPS(ni, nj, x0, y0, dxy, dgrw)
+    gridParams = defGrid_ZPS(params, setGridId=setGridId)
+    gridParams = defGrid_ZPS(params)
+
+    Args:
+        ni, nj    : grid dims (int)
+        x0        : Horizontal position, in meters, of lower left corner (1,1)
+                    from the pole in grid points (float)
+                    (Fotran convention, first point start at index 1)
+        y0        : Vertical position, in meters, of lower left corner (1,1)
+                    from the pole in grid points (float)
+                    (Fotran convention, first point start at index 1)
+        dxy       : grid spacing, in meters, at 60deg. of lat. (float)
+        dgrw      : angle (between 0 and 360, +ve counterclockwise)
+                    between the Greenwich meridian and the horizontal
+                    axis of the grid. (float)
+        north     : True for northern hemisphere,
+                    False for Southern
+        setGridId : Flag for creation of gid, ezscint grid id (True or False)
+        params    : above parameters given as a dictionary (dict)
+    Returns:
+        {
+            'shape' : (ni, nj) # dimensions of the grid
+            'ni'    : grid dim along the x-axis (int)
+            'nj'    : grid dim along the y-axis (int)
+            'pi'    : ref grid Horizontal position of the pole, (float)
+                      in grid points, from bottom left corner (1, 1). [0.]
+                      (Fotran convention, first point start at index 1)
+            'pj'    : ref grid Vertical position of the pole, (float)
+                      in grid points, from bottom left corner (1, 1). [0.]
+                      (Fotran convention, first point start at index 1)
+            'd60'   : ref grid spacing, in meters [1000m], at 60deg. of lat. (float)
+            'dxy'   : avg. grid spacing, in meters, at 60deg. of lat. (float)
+            'x0'    : Horizontal position, in meters, of lower left corner (1,1)
+                      from the pole in grid points (float)
+                      (Fotran convention, first point start at index 1)
+            'y0'    : Vertical position, in meters, of lower left corner (1,1)
+                      from the pole in grid points (float)
+                      (Fotran convention, first point start at index 1)
+            'dgrw'  : angle (between 0 and 360, +ve counterclockwise)
+                      between the Greenwich meridian and the horizontal
+                      axis of the grid. (float)
+            'north' : True for northern hemisphere,
+                      False for Southern
+            'grtyp' : grid type (Z) (str)
+            'tag1'  : grid tag 1 (int)
+            'tag2'  : grid tag 2 (int)
+            'ig1'   : grid tag 1 (int), =tag1
+            'ig2'   : grid tag 2 (int), =tag2
+            'ig3'   : grid tag 3 (int)
+            'ig4'   : grid tag 4, unused (set to 0) (int)
+            'grref' : ref grid type (E) (str)
+            'ig1ref': ref grid parameters, encoded (int)
+            'ig2ref': ref grid parameters, encoded (int)
+            'ig3ref': ref grid parameters, encoded (int)
+            'ig4ref': ref grid parameters, encoded (int)
+            'ax'    : points X positions [m*d60] (numpy, ndarray)
+            'ay'    : points Y positions [m*d60] (numpy, ndarray)
+            'id'    : ezscint grid-id if setGridId==True, -1 otherwise (int)
+       }
+    Raises:
+        TypeError  on wrong input arg types
+        ValueError on invalid input arg value
+        RMNError   on any other error
+
+    Examples:
+    >>> import rpnpy.librmn.all as rmn
+    >>> d60 = 1000.
+    >>> params0 = {
+    ...     'ni'    : 90,
+    ...     'nj'    : 45,
+    ...     'x0'    : -2000.*d60,
+    ...     'y0'    : -7000.*d60,
+    ...     'dxy'   : 4.8*d60,  # 4.8km
+    ...     'dgrw'  : 15.
+    ...     }
+    >>> params = rmn.defGrid_ZPS(params0)
+    >>> print("ni, nj = {ni}, {nj}".format(**params))
+    ni, nj = 90, 45
+    >>> print("x0, y0 = {}, {}".format(int(params['x0']), int(params['y0'])))
+    x0, y0 = -2000000, -7000000
+    >>> print("dxy, d60 = {}, {}".format(int(params['dxy']), int(params['d60'])))
+    dxy, d60 = 4800, 1000
+
+    See Also:
+        defGrid_PS
+        defGrid_ZPSfLL
+        defGrid_ZPSaxes
+        decodeGrid
+        encodeGrid
+    """
+    params = {
+        'ni'    : ni,
+        'nj'    : nj,
+        'x0'    : x0,
+        'y0'    : y0,
+        'dxy'   : dxy,
+        'north' : north,
+        'dgrw'  : dgrw
+        }
+    if isinstance(ni, dict):
+        params.update(ni)
+        try:
+            setGridId = ni['setGridId']
+        except:
+            pass
+    for k in ('ni', 'nj', 'x0', 'y0', 'dxy', 'north', 'dgrw'):
+        try:
+            v = params[k]
+        except:
+            raise TypeError('defGrid_ZPS: provided incomplete grid ' +
+                            'description, missing: {0}'.format(k))
+    for k in ('ni', 'nj'):
+        v = params[k]
+        if not isinstance(v, _integer_types):
+            raise TypeError('defGrid_PS: wrong input data type for ' +
+                            '{0}, expecting int, Got ({1})'.format(k, type(v)))
+        if v <= 0:
+            raise ValueError('defGrid_ZPS: grid dims must be >= 0, got {0}={1}'.format(k, v))
+    for k in ('x0', 'y0', 'dxy', 'dgrw',):
+        v = params[k]
+        if isinstance(v, _integer_types):
+            v = float(v)
+        if not isinstance(v, (float, _np.float32)):
+            raise TypeError('defGrid_ZPS: wrong input data type for ' +
+                            '{0}, expecting float, Got ({1})'.format(k, type(v)))
+        params[k] = v
+    d60 = 1000.
+    params['ax'] = [(params['x0'] + params['dxy']*float(i))/d60
+                    for i in range(params['ni'])]
+    params['ay'] = [(params['y0'] + params['dxy']*float(j))/d60
+                    for j in range(params['nj'])]
+    return defGrid_ZPSaxes(params, setGridId=setGridId)
+
+
+def defGrid_ZPSaxes(ax, ay=None, north=True, dgrw=0., setGridId=True):
+    """
+    Define a Polar stereographic grid for the northern or southern hemisphere
+    from provided rotated axes
+
+    gridParams = defGrid_ZPSaxes(ax, ay, north, dgrw, setGridId)
+    gridParams = defGrid_ZPSaxes(ax, ay, dgrw)
+    gridParams = defGrid_ZPSaxes(params, setGridId=setGridId)
+    gridParams = defGrid_ZPSaxes(params)
+
+    Args:
+        ax        : X position of the grid points [m]
+                    (rotated coor.) (float)
+        ay        : Y position of the grid points [m]
+                    (rotated coor.) (float)
+        dgrw      : angle (between 0 and 360, +ve counterclockwise)
+                    between the Greenwich meridian and the horizontal
+                    axis of the grid. (float)
+        north     : True for northern hemisphere,
+                    False for Southern
+        setGridId : Flag for creation of gid, ezscint grid id (True or False)
+        params    : above parameters given as a dictionary (dict)
+    Returns:
+        {
+            'shape' : (ni, nj) # dimensions of the grid
+            'ni'    : grid dim along the x-axis (int)
+            'nj'    : grid dim along the y-axis (int)
+            'pi'    : ref grid Horizontal position of the pole, (float)
+                      in grid points, from bottom left corner (1, 1). [0.]
+                      (Fotran convention, first point start at index 1)
+            'pj'    : ref grid Vertical position of the pole, (float)
+                      in grid points, from bottom left corner (1, 1). [0.]
+                      (Fotran convention, first point start at index 1)
+            'd60'   : ref grid spacing, in meters [1000m], at 60deg. of lat. (float)
+            'dxy'   : avg. grid spacing, in meters, at 60deg. of lat. (float)
+            'dxy2'  : avg. grid spacing, in meters, at 60deg. of lat. (float)
+            'x0'    : Horizontal position, in meters, of lower left corner (1,1)
+                      from the pole in grid points (float)
+                      (Fotran convention, first point start at index 1)
+            'y0'    : Vertical position, in meters, of lower left corner (1,1)
+                      from the pole in grid points (float)
+                      (Fotran convention, first point start at index 1)
+            'dgrw'  : angle (between 0 and 360, +ve counterclockwise)
+                      between the Greenwich meridian and the horizontal
+                      axis of the grid. (float)
+            'north' : True for northern hemisphere,
+                      False for Southern
+            'grtyp' : grid type (Z) (str)
+            'tag1'  : grid tag 1 (int)
+            'tag2'  : grid tag 2 (int)
+            'ig1'   : grid tag 1 (int), =tag1
+            'ig2'   : grid tag 2 (int), =tag2
+            'ig3'   : grid tag 3 (int)
+            'ig4'   : grid tag 4, unused (set to 0) (int)
+            'grref' : ref grid type (E) (str)
+            'ig1ref': ref grid parameters, encoded (int)
+            'ig2ref': ref grid parameters, encoded (int)
+            'ig3ref': ref grid parameters, encoded (int)
+            'ig4ref': ref grid parameters, encoded (int)
+            'ax'    : points X positions [m*d60] (numpy, ndarray)
+            'ay'    : points Y positions [m*d60] (numpy, ndarray)
+            'id'    : ezscint grid-id if setGridId==True, -1 otherwise (int)
+       }
+    Raises:
+        TypeError  on wrong input arg types
+        ValueError on invalid input arg value
+        RMNError   on any other error
+
+    Examples:
+    >>> import rpnpy.librmn.all as rmn
+    >>> (ni, nj) = (90, 45)
+    >>> d60 = 1000.
+    >>> (x0, y0) = (-2000.*d60, -7000.*d60)
+    >>> dxy = 4.8*d60  # 4.8km
+    >>> params0 = {
+    ...     'ax'    : [(x0 + dxy*float(i))/d60 for i in range(ni)],
+    ...     'ay'    : [(y0 + dxy*float(j))/d60 for j in range(nj)],
+    ...     'dgrw'  : 15.
+    ...     }
+    >>> params = rmn.defGrid_ZPSaxes(params0)
+    >>> print("ni, nj = {ni}, {nj}".format(**params))
+    ni, nj = 90, 45
+    >>> print("x0, y0 = {}, {}".format(int(params['x0']), int(params['y0'])))
+    x0, y0 = -2000000, -7000000
+    >>> print("dxy, d60 = {}, {}".format(int(params['dxy']), int(params['d60'])))
+    dxy, d60 = 4800, 1000
+
+    See Also:
+        defGrid_PS
+        defGrid_ZPS
+        defGrid_ZPSfLL
+        decodeGrid
+        encodeGrid
+    """
+    params = {
+        'ax'    : ax,
+        'ay'    : ay,
+        'north' : north,
+        'dgrw'  : dgrw
+        }
+    if isinstance(ax, dict):
+        params.update(ax)
+        try:
+            setGridId = ax['setGridId']
+        except:
+            pass
+    for k in ('north', 'dgrw'):
+        try:
+            v = params[k]
+        except:
+            raise TypeError('defGrid_ZPSaxes: provided incomplete grid ' +
+                            'description, missing: {0}'.format(k))
+    for k in ('dgrw',):
+        v = params[k]
+        if isinstance(v, _integer_types):
+            v = float(v)
+        if not isinstance(v, (float, _np.float32)):
+            raise TypeError('defGrid_ZPSaxes: wrong input data type for ' +
+                            '{0}, expecting float, Got ({1})'.format(k, type(v)))
+        params[k] = v
+
+    params['ax'] = _list2ftnf32(params['ax'])
+    params['ay'] = _list2ftnf32(params['ay'])
+    params['ax'] = params['ax'].reshape((params['ax'].size, 1))
+    params['ay'] = params['ay'].reshape((1, params['ay'].size))
+
+    params['grtyp'] = 'Z'
+    params['grref'] = 'N' if params['north'] else 'S'
+    params['pi']  = 0.
+    params['pj']  = 0.
+    params['d60'] = 1000.
+    ig1234 = _rb.cxgaig(params['grref'], params['pi'], params['pj'],
+                        params['d60'], params['dgrw'])
+
+    params['ig1ref'] = ig1234[0]
+    params['ig2ref'] = ig1234[1]
+    params['ig3ref'] = ig1234[2]
+    params['ig4ref'] = ig1234[3]
+    params['ig1'] = ig1234[0]
+    params['ig2'] = ig1234[1]
+    params['ig3'] = ig1234[2]
+    params['ig4'] = ig1234[3]
+
+    params['ni']   = params['ax'].size
+    params['nj']   = params['ay'].size
+    params['dxy'] = params['d60'] * (params['ay'][0,-1] - params['ay'][0,0])/(params['nj'] - 1)
+    params['dxy2'] = params['d60'] * (params['ax'][-1,0] - params['ax'][0,0])/(params['ni'] - 1)
+    params['y0'] = params['d60'] * float(params['ay'][0,0])
+    params['x0'] = params['d60'] * float(params['ax'][0,0])
+
+    params['id'] = _ri.ezgdef_fmem(params) if setGridId else -1
+
+    (params['tag1'], params['tag2']) = getIgTags(params)
+    params['tag3'] = 0
+
+    (params['ig1'], params['ig2']) = (params['tag1'], params['tag2'])
+    (params['ig3'], params['ig4']) = (params['tag3'], 0)
+    params['shape'] = (params['ni'], params['nj'])
+    return params
+
+
 def defGrid_YY(nj, overlap=0., xlat1=0., xlon1=180., xlat2=0., xlon2=270.,
                setGridId=True):
     """
@@ -1945,13 +2824,13 @@ def defGrid_YY(nj, overlap=0., xlat1=0., xlon1=180., xlat2=0., xlon2=270.,
         nj          : YIN grid dims (int)
                       ni = (nj-1)*3+1
         overlap     : number of overlapping degree between the 2 grids (float)
-        xlat1, xlon1 : lat, lon of the grid center in degrees (float)
+        xlat1, xlon1 : lat, lon of the grid center [deg] (float)
                       This defines, in rotated coor., (rlat, rlon) = (0., 180.)
                       on the rotated equator on the YIN grid
                       The grid is defined, in rotated coor on
                       rlat: -90. to +90. degrees
                       rlon:   0. to 360. degrees
-        xlat2, xlon2 : lat, lon of a 2nd ref. point in degrees (float)
+        xlat2, xlon2 : lat, lon of a 2nd ref. point [deg] (float)
                       This point is considered to be on the rotated equator,
                       east of xlat1, xlon1 on the YIN grid
                       (it thus defines the rotation)
@@ -1977,12 +2856,12 @@ def defGrid_YY(nj, overlap=0., xlat1=0., xlon1=180., xlat2=0., xlon2=270.,
             'ig2ref' : ref grid parameters, encoded (int)
             'ig3ref' : ref grid parameters, encoded (int)
             'ig4ref' : ref grid parameters, encoded (int)
-            'dlat'  : grid resolution/spacing along lat axe in degrees (float)
-            'dlon'  : grid resolution/spacing along lon axe in degrees (float)
-            'xlat1' : lat of grid center in degrees (float)
-            'xlon1' : lon of grid center in degrees (float)
-            'xlat2' : lat of a 2nd ref. point in degrees (float)
-            'xlon2' : lon of a 2nd ref. point in degrees (float)
+            'dlat'  : grid resolution/spacing along lat axe [deg] (float)
+            'dlon'  : grid resolution/spacing along lon axe [deg] (float)
+            'xlat1' : lat of grid center [deg] (float)
+            'xlon1' : lon of grid center [deg] (float)
+            'xlat2' : lat of a 2nd ref. point [deg] (float)
+            'xlon2' : lon of a 2nd ref. point [deg] (float)
             'axy'   : positional record ('^>') (numpy, ndarray)
             'id'    : ezscint grid-id if setGridId==True, -1 otherwise (int)
             'nsubgrids' : number of subgrids =2 (int)
@@ -2120,30 +2999,15 @@ def yyg_yangrot_py(yinlat1, yinlon1, yinlat2, yinlon2):
         encodeGrid
     """
     rot = egrid_rot_matrix(yinlat1, yinlon1, yinlat2, yinlon2)
-    #Get transpose of rotation
     invrot = rot.T
-    #Find the centre of Yang grid through Yin by setting
-    #And set the rotation for Yang grid with respect to Yin
     (xlat1, xlon1, xlat2, xlon2) = (0., 0., 90, 0.)
-    #Obtain the cartesian coordinates
     xyz1 = _ll.llacar_py(xlon1, xlat1)
     xyz2 = _ll.llacar_py(xlon2, xlat2)
-    xyz3 = [0., 0., 0.]
-    xyz4 = [0., 0., 0.]
-    for i in range(3):
-        xyz3[i] = 0.
-        xyz4[i] = 0.
-        for j in range(3):
-            xyz3[i] = xyz3[i] + invrot[i, j]*xyz1[j]
-            xyz4[i] = xyz4[i] + invrot[i, j]*xyz2[j]
-    #Obtain the real geographic coordinates
+    xyz3 = _np.dot(invrot, xyz1)
+    xyz4 = _np.dot(invrot, xyz2)
     (xlon1, xlat1) = _ll.cartall_py(xyz3)
     (xlon2, xlat2) = _ll.cartall_py(xyz4)
-    if xlon1 >= 360.:
-        xlon1 -= 360.
-    if xlon2 >= 360.:
-        xlon2 -= 360.
-    return (xlat1, xlon1, xlat2, xlon2)
+    return (xlat1, xlon1 % 360., xlat2, xlon2 % 360.)
 
 
 def yyg_pos_rec(yinlat1, yinlon1, yinlat2, yinlon2, ax, ay):
@@ -2153,13 +3017,13 @@ def yyg_pos_rec(yinlat1, yinlon1, yinlat2, yinlon2, ax, ay):
     axy = yyg_pos_rec(yinlat1, yinlon1, yinlat2, yinlon2, ax, xy)
 
     Args:
-        yinlat1, yinlon1 : lat, lon of the YIN grid center in degrees (float)
+        yinlat1, yinlon1 : lat, lon of the YIN grid center [deg] (float)
                       This defines, in rotated coor., (rlat, rlon) = (0., 180.)
                       on the rotated equator
                       The grid is defined, in rotated coor on
                       rlat: -90. to +90. degrees
                       rlon:   0. to 360. degrees
-        yinlat2, yinlon2 : lat, lon of a 2nd YIN ref. point in degrees (float)
+        yinlat2, yinlon2 : lat, lon of a 2nd YIN ref. point [deg] (float)
                       This point is considered to be on the rotated equator,
                       east of xlat1, xlon1 (it thus defines the rotation)
         ax : points longitude of the YIN grid, in rotated coor.(numpy.ndarray)
@@ -2235,6 +3099,7 @@ def yyg_pos_rec(yinlat1, yinlon1, yinlat2, yinlon2, ax, ay):
     axy[sindx+10+ni:sindx+10+ni+nj] = ay[0, 0:nj]
     return axy
 
+
 #TODO: write in C (modelutils's C): llacar, cartall, yyg_yangrot, yyg_pos_rec
 def egrid_rot_matrix(xlat1, xlon1, xlat2, xlon2):
     """
@@ -2244,13 +3109,13 @@ def egrid_rot_matrix(xlat1, xlon1, xlat2, xlon2):
         yyg_yangrot_py(xlat1, xlon1, xlat2, xlon2)
 
     Args:
-        xlat1, xlon1 : lat, lon of the grid center in degrees (float)
+        xlat1, xlon1 : lat, lon of the grid center [deg] (float)
                       This defines, in rotated coor., (rlat, rlon) = (0., 180.)
                       on the rotated equator
                       The grid is defined, in rotated coor on
                       rlat: -90. to +90. degrees
                       rlon:   0. to 360. degrees
-        xlat2, xlon2 : lat, lon of a 2nd ref. point in degrees (float)
+        xlat2, xlon2 : lat, lon of a 2nd ref. point [deg] (float)
                       This point is considered to be on the rotated equator,
                       east of xlat1, xlon1 (it thus defines the rotation)
     Returns:
@@ -2279,7 +3144,7 @@ def egrid_rot_matrix(xlat1, xlon1, xlat2, xlon2):
     d = _sqrt( ( ( (a*xyz1[0]) - xyz2[0] ) / b )**2 + \
               ( ( (a*xyz1[1]) - xyz2[1] ) / b )**2 + \
               ( ( (a*xyz1[2]) - xyz2[2] ) / b )**2  )
-    rot = _np.empty((3, 3), dtype=_np.float32)
+    rot = _np.empty((3, 3), dtype=_np.float64)
     rot[0, 0] = -xyz1[0]/c
     rot[0, 1] = -xyz1[1]/c
     rot[0, 2] = -xyz1[2]/c
@@ -2300,13 +3165,13 @@ def egrid_rll2ll(xlat1, xlon1, xlat2, xlon2, rlat, rlon):
     (lat, lon) = egrid_rll2ll(xlat1, xlon1, xlat2, xlon2, rlat, rlon)
 
     Args:
-        xlat1, xlon1 : lat, lon of the grid center in degrees (float)
+        xlat1, xlon1 : lat, lon of the grid center [deg] (float)
                        This defines, in rotated coor., (rlat, rlon) = (0., 180.)
                        on the rotated equator
                        The grid is defined, in rotated coor on
                        rlat: -90. to +90. degrees
                        rlon:   0. to 360. degrees
-        xlat2, xlon2 : lat, lon of a 2nd ref. point in degrees (float)
+        xlat2, xlon2 : lat, lon of a 2nd ref. point [deg] (float)
                        This point is considered to be on the rotated equator,
                        east of xlat1, xlon1 (it thus defines the rotation)
         rlat, rlon   : lat and lon on the rotated grid referencial
@@ -2323,26 +3188,53 @@ def egrid_rll2ll(xlat1, xlon1, xlat2, xlon2, rlat, rlon):
     >>> (lat, lon)   = egrid_rll2ll(xlat1, xlon1, xlat2, xlon2, rlat, rlon)
 
     See Also:
+        egrid_rll2ll_rot
         egrid_ll2rll
+        egrid_ll2rll_rot
         defGrid_YY
         decodeGrid
         encodeGrid
     """
     rot = egrid_rot_matrix(xlat1, xlon1, xlat2, xlon2)
-    #Get transpose of rotation
+    return egrid_rll2ll_rot(rot, rlat, rlon)
+
+
+def egrid_rll2ll_rot(rot, rlat, rlon):
+    """
+    Compute lat-lon from rotated lat-lon
+    of a rotated cylindrical equidistent (E) grid
+
+    (lat, lon) = egrid_rll2ll_rot(rot, rlat, rlon)
+
+    Args:
+        rot        : rotation matrix
+                     rot = egrid_rot_matrix(xlat1, xlon1, xlat2, xlon2)
+        rlat, rlon : lat and lon on the rotated grid referencial
+    Returns:
+        (lat, lon)
+    Raises:
+        TypeError  on wrong input arg types
+
+    Examples:
+    >>> import rpnpy.librmn.all as rmn
+    >>> (xlat1, xlon1, xlat2, xlon2)    = (0., 180., 0., 270.)
+    >>> (rlat, rlon) = (45., 271.)
+    >>> rot = egrid_rot_matrix(xlat1, xlon1, xlat2, xlon2)
+    >>> (lat, lon) = egrid_rll2ll_rot(rot, rlat, rlon)
+
+    See Also:
+        egrid_rll2ll
+        egrid_ll2rll
+        egrid_ll2rllrot
+        defGrid_YY
+        decodeGrid
+        encodeGrid
+    """
     invrot = rot.T
-    #Obtain the cartesian coordinates
     xyz1 = _ll.llacar_py(rlon, rlat)
-    xyz3 = [0., 0., 0.]
-    for i in range(3):
-        xyz3[i] = 0.
-        for j in range(3):
-            xyz3[i] = xyz3[i] + invrot[i, j]*xyz1[j]
-    #Obtain the real geographic coordinates
+    xyz3 = _np.dot(invrot, xyz1)
     (lon, lat) = _ll.cartall_py(xyz3)
-    if lon >= 360.:
-        lon -= 360.
-    return (lat, lon)
+    return (lat, lon % 360.)
 
 
 def egrid_ll2rll(xlat1, xlon1, xlat2, xlon2, lat, lon):
@@ -2353,13 +3245,13 @@ def egrid_ll2rll(xlat1, xlon1, xlat2, xlon2, lat, lon):
     (rlat, rlon) = egrid_ll2rll(xlat1, xlon1, xlat2, xlon2, lat, lon)
 
     Args:
-        xlat1, xlon1 : lat, lon of the grid center in degrees (float)
+        xlat1, xlon1 : lat, lon of the grid center [deg] (float)
                        This defines, in rotated coor., (rlat, rlon) = (0., 180.)
                        on the rotated equator
                        The grid is defined, in rotated coor on
                        rlat: -90. to +90. degrees
                        rlon:   0. to 360. degrees
-        xlat2, xlon2 : lat, lon of a 2nd ref. point in degrees (float)
+        xlat2, xlon2 : lat, lon of a 2nd ref. point [deg] (float)
                        This point is considered to be on the rotated equator,
                        east of xlat1, xlon1 (it thus defines the rotation)
         lat, lon     : lat and lon on the not rotated grid referencial
@@ -2376,24 +3268,58 @@ def egrid_ll2rll(xlat1, xlon1, xlat2, xlon2, lat, lon):
     >>> (rlat, rlon) = egrid_ll2rll(xlat1, xlon1, xlat2, xlon2, lat, lon)
 
     See Also:
+        egrid_ll2rll_rot
         egrid_rll2ll
+        egrid_rll2ll_rot
         defGrid_YY
         decodeGrid
         encodeGrid
     """
     rot = egrid_rot_matrix(xlat1, xlon1, xlat2, xlon2)
-    #Obtain the cartesian coordinates
+    return egrid_ll2rll_rot(rot, lat, lon)
+
+
+def egrid_ll2rll_rot(rot, lat, lon):
+    """
+    Compute rotated lat-lon from non rotated lat-lon
+    of a rotated cylindrical equidistent (E) grid
+
+    (rlat, rlon) = egrid_ll2rll(xlat1, xlon1, xlat2, xlon2, lat, lon)
+
+    Args:
+        xlat1, xlon1 : lat, lon of the grid center [deg] (float)
+                       This defines, in rotated coor., (rlat, rlon) = (0., 180.)
+                       on the rotated equator
+                       The grid is defined, in rotated coor on
+                       rlat: -90. to +90. degrees
+                       rlon:   0. to 360. degrees
+        xlat2, xlon2 : lat, lon of a 2nd ref. point [deg] (float)
+                       This point is considered to be on the rotated equator,
+                       east of xlat1, xlon1 (it thus defines the rotation)
+        lat, lon     : lat and lon on the not rotated grid referencial
+    Returns:
+        (rlat, rlon)
+    Raises:
+        TypeError  on wrong input arg types
+
+    Examples:
+    >>> import rpnpy.librmn.all as rmn
+    >>> (xlat1, xlon1, xlat2, xlon2)    = (0., 180., 0., 270.)
+    >>> (lat, lon)   = (45., 271.)
+    >>> (rlat, rlon) = egrid_ll2rll(xlat1, xlon1, xlat2, xlon2, lat, lon)
+
+    See Also:
+        egrid_ll2rll
+        egrid_rll2ll
+        egrid_rll2ll_rot
+        defGrid_YY
+        decodeGrid
+        encodeGrid
+    """
     xyz1 = _ll.llacar_py(lon, lat)
-    xyz3 = [0., 0., 0.]
-    for i in range(3):
-        xyz3[i] = 0.
-        for j in range(3):
-            xyz3[i] = xyz3[i] + rot[i, j]*xyz1[j]
-    #Obtain the real geographic coordinates
+    xyz3 = _np.dot(rot, xyz1)
     (lon, lat) = _ll.cartall_py(xyz3)
-    if lon >= 360.:
-        lon -= 360.
-    return (lat, lon)
+    return (lat, lon % 360.)
 
 # =========================================================================
 

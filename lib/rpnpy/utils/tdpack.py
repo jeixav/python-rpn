@@ -19,14 +19,12 @@
 # Copyright: LGPL 2.1
 
 """
-Module rpnpy.utils.thermofunc (TDpack) defines basic thermodynamic functions used in RPNPhy
+Module rpnpy.utils.tdpack defines basic thermodynamic functions used in RPNPhy
 
 Note: All functions uses SI units (e.g. ttt  [k], prs [pa], qqq [kg/kg])
 
 See Also:
-    rpnpy.utils.thermoconst
-    rpnpy.utils.tdpack_consts
-    rpnpy.utils.tdpack
+    rpnpy.utils.tdpack_const
 
 Details:
 
@@ -108,7 +106,7 @@ https://wiki.cmc.ec.gc.ca/images/9/9e/RPNPhy_Thermodynamic_functions_brunet.pdf
 https://wiki.cmc.ec.gc.ca/images/4/4c/RPNPhy_Thermodynamic_functions.pdf
 """
 import numpy as _np
-from rpnpy.utils.thermoconsts import *
+from rpnpy.utils.tdpack_consts import *
 
 _DSIGN  = lambda V,S: V * _np.sign(S)
 _DABS   = lambda X: _np.absolute(X)

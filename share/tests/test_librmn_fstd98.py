@@ -15,13 +15,13 @@ class Librmn_fstd98_Test(unittest.TestCase):
     ##     [-89.5, -89. , -88.5],
     ##     [-89.5, -89. , -88.5],
     ##     [-89.5, -89. , -88.5]]
-    ##     ,dtype=np.dtype('float32')).T #,order='FORTRAN')
+    ##     ,dtype=np.dtype('float32')).T #,order='F')
     ## lod = np.array(
     ##     [[ 180. ,  180. ,  180. ],
     ##     [ 180.5,  180.5,  180.5],
     ##     [ 181. ,  181. ,  181. ],
     ##     [ 181.5,  181.5,  181.5]]
-    ##     ,dtype=np.dtype('float32')).T #,order='FORTRAN')
+    ##     ,dtype=np.dtype('float32')).T #,order='F')
     lad = np.array(
         [
             [1.1, 2.1 , 3.1, 4.1, 5.1],
@@ -29,7 +29,7 @@ class Librmn_fstd98_Test(unittest.TestCase):
             [1.3, 2.3 , 3.3, 4.3, 5.3],
             [1.4, 2.4 , 3.4, 4.4, 5.4]
         ]
-        ,dtype=np.dtype('float32')).T #,order='FORTRAN')
+        ,dtype=np.dtype('float32')).T #,order='F')
     lod = np.array(
         [
             [-1.1, -2.1 , -3.1],
@@ -38,7 +38,7 @@ class Librmn_fstd98_Test(unittest.TestCase):
             [-1.4, -2.4 , -3.4],
             [-1.5, -2.5 , -3.5]
         ]
-        ,dtype=np.dtype('float32')).T #,order='FORTRAN')
+        ,dtype=np.dtype('float32')).T #,order='F')
     grtyp='L'
     xg14 = (-89.5,180.0,0.5,0.5)
     fname = '__rpnstd__testfile__.fst'
@@ -163,10 +163,19 @@ class Librmn_fstd98_Test(unittest.TestCase):
         reclist = rmn.fstinl(funit,nomvar='VF')
         self.assertEqual(len(reclist),26,' fstinl of VF found %d/26 rec ' % len(reclist))
 
-        #Note: fstnbr does not work on linked files...
-        ## nrec = rmn.fstnbrv(funit)
-        ## self.assertEqual(nrec,9999,' fstnbrv found %d/???? rec ' % nrec)
-       
+        reclist2 = rmn.fstinl(funit)
+        self.assertEqual(len(reclist2),2788,' fstinl found %d/2788 rec ' % len(reclist))
+        
+        #Note: c_fstnbrv on linked files returns only nrec on the first file
+        #      python's fstnbrv interface add results for all linked files
+        nrec = rmn.fstnbrv(funit)
+        self.assertEqual(nrec,2788,' fstnbrv found %d/2788 rec ' % nrec)
+
+        #Note: c_fstnbr on linked files returns only nrec on the first file
+        #      python's fstnbr interface add results for all linked files
+        nrec = rmn.fstnbr(funit)
+        self.assertEqual(nrec,2788,' fstnbr found %d/2788 rec ' % nrec)
+
         rmn.fstcloseall(funit)
 
 
@@ -301,9 +310,9 @@ class Librmn_fstd98_Test(unittest.TestCase):
             )
         lo = la.copy()
         lo['nomvar'] = 'LO'
-        #Note: For the order to be ok in the FSTD file, order='FORTRAN' is mandatory
-        la['d'] = np.empty((ni,nj),dtype=np.float32,order='FORTRAN')
-        lo['d'] = np.empty((ni,nj),dtype=np.float32,order='FORTRAN')
+        #Note: For the order to be ok in the FSTD file, order='F' is mandatory
+        la['d'] = np.empty((ni,nj),dtype=np.float32,order='F')
+        lo['d'] = np.empty((ni,nj),dtype=np.float32,order='F')
         for j in range(nj):
             for i in range(ni):
                 lo['d'][i,j] = 100.+float(i)        

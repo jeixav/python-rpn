@@ -49,7 +49,7 @@ _ftn   = lambda x, t: x if _isftnf32(x) else _np.asfortranarray(x, dtype=t)
 _isftnf32 = lambda x: _isftn(x, _np.float32)
 _ftnf32   = lambda x: _ftn(x, _np.float32)
 _ftnOrEmpty = lambda x, s, t: \
-    _np.empty(s, dtype=t, order='FORTRAN') if x is None else _ftn(x, t)
+    _np.empty(s, dtype=t, order='F') if x is None else _ftn(x, t)
 _list2ftnf32 = lambda x: \
     x if isinstance(x, _np.ndarray) \
       else _np.asfortranarray(x, dtype=_np.float32)
@@ -81,9 +81,61 @@ class EzscintError(RMNError):
 
 #---- Set Functions
 
+def ezsetival(option, value):
+    """
+    Sets an integer numerical ezscint option
+    
+    ezsetival(option, value)
+    
+    Args:
+        option : option name (string)
+        value  : option value (float)
+    Returns:
+        None
+    Raises:
+        TypeError    on wrong input arg types
+        EzscintError on any other error
+
+    See Also:
+        ezsetval
+        ezsetopt
+        ezgetopt
+        rpnpy.librmn.const
+    """
+    return ezsetopt(option, value)
+
+
+def ezsetval(option, value):
+    """
+    Sets a floating point numerical ezscint option
+    
+    ezsetval(option, value)
+    
+    Args:
+        option : option name (string)
+        value  : option value (float)
+    Returns:
+        None
+    Raises:
+        TypeError    on wrong input arg types
+        EzscintError on any other error
+
+    Examples:
+    >>> import rpnpy.librmn.all as rmn
+    >>> rmn.ezsetval(rmn.EZ_OPT_EXTRAP_VALUE, 999.)
+
+    See Also:
+        ezsetival
+        ezsetopt
+        ezgetopt
+        rpnpy.librmn.const
+    """
+    return ezsetopt(option, value)
+
+
 def ezsetopt(option, value):
     """
-    Sets a floating point numerical option from the package
+    Sets ezscint option: float, integer or string
 
     ezsetopt(option, value)
 
@@ -96,6 +148,10 @@ def ezsetopt(option, value):
         TypeError    on wrong input arg types
         EzscintError on any other error
 
+    Notes:
+        This function replaces the following C/Fortran functions:
+        ezsetival, ezsetval, ezsetopt
+
     Examples:
 
     >>> import rpnpy.librmn.all as rmn
@@ -103,6 +159,8 @@ def ezsetopt(option, value):
     >>> rmn.ezsetopt(rmn.EZ_OPT_USE_1SUBGRID,  rmn.EZ_YES)
 
     See Also:
+        ezsetval
+        ezsetival
         ezgetopt
         rpnpy.librmn.const
     """
@@ -122,7 +180,7 @@ def ezsetopt(option, value):
         return None
     raise EzscintError()
 
-#TODO: should we merge ezqkdef et ezgdef_fmem?
+
 def ezqkdef(ni, nj=None, grtyp=None, ig1=None, ig2=None, ig3=None, ig4=None,
             iunit=0):
     """
@@ -234,8 +292,8 @@ def ezgdef_fmem(ni, nj=None, grtyp=None, grref=None, ig1=None, ig2=None,
     ...     }
     >>> ig1234 = rmn.cxgaig(gp['grref'], gp['xlat1'], gp['xlon1'],
     ...                     gp['xlat2'], gp['xlon2'])
-    >>> gp['ax'] = np.empty((ni,1), dtype=np.float32, order='FORTRAN')
-    >>> gp['ay'] = np.empty((1,nj), dtype=np.float32, order='FORTRAN')
+    >>> gp['ax'] = np.empty((ni,1), dtype=np.float32, order='F')
+    >>> gp['ay'] = np.empty((1,nj), dtype=np.float32, order='F')
     >>> for i in range(ni): gp['ax'][i,0] = gp['lon0']+float(i)*gp['dlon']
     >>> for j in range(nj): gp['ay'][0,j] = gp['lat0']+float(j)*gp['dlat']
     >>> gid = rmn.ezgdef_fmem(ni, nj, gp['grtyp'], gp['grref'],
@@ -397,8 +455,9 @@ def ezdefset(gdidout, gdidin):
     >>> import rpnpy.librmn.all as rmn
 
     >>> # Read source data and define its grid
+    >>> rmn.fstopt(rmn.FSTOP_MSGLVL,rmn.FSTOPI_MSG_CATAST)
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES')
-    >>> myfile = os.path.join(ATM_MODEL_DFILES.strip(),'bcmk','geophy.fst')
+    >>> myfile = os.path.join(ATM_MODEL_DFILES.strip(), 'bcmk', 'geophy.fst')
     >>> funit  = rmn.fstopenall(myfile)
     >>> meRec  = rmn.fstlir(funit, nomvar='ME')
     >>> inGrid = rmn.readGrid(funit, meRec)
@@ -457,8 +516,9 @@ def gdsetmask(gdid, mask):
     >>> import rpnpy.librmn.all as rmn
     >>>
     >>> # Read source data and define its grid
+    >>> rmn.fstopt(rmn.FSTOP_MSGLVL,rmn.FSTOPI_MSG_CATAST)
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES')
-    >>> myfile = os.path.join(ATM_MODEL_DFILES.strip(),'bcmk','geophy.fst')
+    >>> myfile = os.path.join(ATM_MODEL_DFILES.strip(), 'bcmk', 'geophy.fst')
     >>> funit  = rmn.fstopenall(myfile)
     >>> mgRec  = rmn.fstlir(funit, nomvar='MG')
     >>> meRec  = rmn.fstlir(funit, nomvar='ME')
@@ -500,9 +560,55 @@ def gdsetmask(gdid, mask):
 #---- Query Functions
 
 
+def ezgetival(option):
+    """
+    Gets an ezscint integer option value
+    
+    value = ezgetival(option)
+    
+    Args:
+        option : option name (string)
+    Returns:
+        integer, option value
+    Raises:
+        TypeError    on wrong input arg types
+        EzscintError on any other error
+        
+    See Also:
+        ezgetval
+        ezgetopt
+        ezsetopt
+        rpnpy.librmn.const
+    """
+    return ezgetopt(option, vtype=int)
+
+
+def ezgetval(option):
+    """
+    Gets an ezscint float option value
+    
+    value = ezgetval(option)
+    
+    Args:
+        option : option name (string)
+    Returns:
+        float, option value
+    Raises:
+        TypeError    on wrong input arg types
+        EzscintError on any other error
+        
+    See Also:
+        ezgetival
+        ezgetopt
+        ezsetopt
+        rpnpy.librmn.const
+    """
+    return ezgetopt(option, vtype=float)
+
+
 def ezgetopt(option, vtype=int):
     """
-    Gets an option value from the package
+    Gets an ezscint option value
 
     value = ezgetopt(option)
     value = ezgetopt(option, vtype)
@@ -517,6 +623,10 @@ def ezgetopt(option, vtype=int):
         TypeError    on wrong input arg types
         EzscintError on any other error
 
+    Notes:
+        This function replaces the following C/Fortran functions:
+        ezgetival, ezgetval, ezgetopt
+
     Examples:
 
     >>> import rpnpy.librmn.all as rmn
@@ -525,6 +635,8 @@ def ezgetopt(option, vtype=int):
     # Field will be interpolated with type: linear
 
     See Also:
+        ezgetival
+        ezgetval
         ezsetopt
         rpnpy.librmn.const
     """
@@ -610,8 +722,8 @@ def ezget_subgridids(super_gdid):
     >>> import rpnpy.librmn.all as rmn
     >>> yy = rmn.defGrid_YY(31)
     >>> idlist = rmn.ezget_subgridids(yy['id'])
-    >>> print("# The list of grid id in the YY grid is: {0}".format(str(idlist)))
-    # The list of grid id in the YY grid is: [8, 9]
+    >>> print("# Found {} subrids".format(len(idlist)))
+    # Found 2 subrids
 
     See Also:
         ezgdef_supergrid
@@ -625,7 +737,7 @@ def ezget_subgridids(super_gdid):
     """
     super_gdid = _getCheckArg(int, super_gdid, super_gdid, 'id')
     nsubgrids  = ezget_nsubgrids(super_gdid)
-    cgridlist  = _np.empty(nsubgrids, dtype=_np.intc, order='FORTRAN')
+    cgridlist  = _np.empty(nsubgrids, dtype=_np.intc, order='F')
     istat = _rp.c_ezget_subgridids(super_gdid, cgridlist)
     if istat >= 0:
         return cgridlist.tolist()
@@ -654,6 +766,12 @@ def ezgprm(gdid, doSubGrid=False):
             'ig2'   : second grid descriptor
             'ig3'   : third grid descriptor
             'ig4'   : fourth grid descriptor
+        }
+        if doSubGrid, add these
+        {
+            'nsubgrids' : Number of subgrids
+            'subgridid' : list of subgrids id
+            'subgrid'   : list of subgrids details {'id', 'shape', ...}
         }
     Raises:
         TypeError    on wrong input arg types
@@ -705,12 +823,12 @@ def ezgprm(gdid, doSubGrid=False):
     if doSubGrid:
         params['nsubgrids'] = ezget_nsubgrids(gdid)
         params['subgridid'] = ezget_subgridids(gdid)
-        params['subgrid'] = [gdid]
-        if params['nsubgrids'] > 1:
-            params['subgrid'] = []
+        params['subgrid'] = []
+        if params['nsubgrids'] > 0:
             for gid2 in params['subgridid']:
                 params['subgrid'].append(ezgprm(gid2))
     return params
+
 
 #TODO: merge ezgprm et ezgxprm et gdgaxes (conditional axes)?
 def ezgxprm(gdid, doSubGrid=False):
@@ -742,6 +860,12 @@ def ezgxprm(gdid, doSubGrid=False):
             'ig4ref' : fourth grid descriptor of grid ref
         }
         For grtyp not in ('Z', '#', 'Y', 'U'), grref=' ', ig1..4ref=0
+        if doSubGrid, add these
+        {
+            'nsubgrids' : Number of subgrids
+            'subgridid' : list of subgrids id
+            'subgrid'   : list of subgrids details {'id', 'shape', ...}
+        }
     Raises:
         TypeError    on wrong input arg types
         EzscintError on any other error
@@ -770,8 +894,8 @@ def ezgxprm(gdid, doSubGrid=False):
     ...     }
     >>> ig1234 = rmn.cxgaig(gp['grref'], gp['xlat1'], gp['xlon1'],
     ...                     gp['xlat2'], gp['xlon2'])
-    >>> gp['ax'] = np.empty((ni,1), dtype=np.float32, order='FORTRAN')
-    >>> gp['ay'] = np.empty((1,nj), dtype=np.float32, order='FORTRAN')
+    >>> gp['ax'] = np.empty((ni,1), dtype=np.float32, order='F')
+    >>> gp['ay'] = np.empty((1,nj), dtype=np.float32, order='F')
     >>> for i in range(ni): gp['ax'][i,0] = gp['lon0']+float(i)*gp['dlon']
     >>> for j in range(nj): gp['ay'][0,j] = gp['lat0']+float(j)*gp['dlat']
     >>> gid = rmn.ezgdef_fmem(ni, nj, gp['grtyp'], gp['grref'],
@@ -826,23 +950,24 @@ def ezgxprm(gdid, doSubGrid=False):
     if doSubGrid:
         params['nsubgrids'] = ezget_nsubgrids(gdid)
         params['subgridid'] = ezget_subgridids(gdid)
-        params['subgrid'] = [gdid]
-        if params['nsubgrids'] > 1:
-            params['subgrid'] = []
+        params['subgrid'] = []
+        if params['nsubgrids'] > 0:
             for gid2 in params['subgridid']:
                 params['subgrid'].append(ezgxprm(gid2))
     return params
 
 
-def ezgfstp(gdid):
+def ezgfstp(gdid, doSubGrid=False):
     """
     Get the standard file attributes of the positional records
 
     recParams = ezgfstp(gdid)
+    recParams = ezgfstp(gdid, doSubGrid=True)
 
     Args:
         gdid : grid id (int or dict)
                Dict with key 'id' is accepted from version 2.0.rc1
+        doSubGrid : recurse on subgrids if True
     Returns:
         {
             'id'    : grid id, same as input arg
@@ -860,6 +985,12 @@ def ezgfstp(gdid):
             'npas'   : time step number
             'nbits' : number of bits kept for the elements of the field
         }
+        if doSubGrid, add these
+        {
+            'nsubgrids' : Number of subgrids
+            'subgridid' : list of subgrids id
+            'subgrid'   : list of subgrids details {'id', 'typvarx', ...}
+        }
     Raises:
         TypeError    on wrong input arg types
         EzscintError on any other error
@@ -870,8 +1001,9 @@ def ezgfstp(gdid):
     >>> import rpnpy.librmn.all as rmn
     >>>
     >>> # Read source data and define its grid
+    >>> rmn.fstopt(rmn.FSTOP_MSGLVL,rmn.FSTOPI_MSG_CATAST)
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES').strip()
-    >>> myfile = os.path.join(ATM_MODEL_DFILES,'bcmk','geophy.fst')
+    >>> myfile = os.path.join(ATM_MODEL_DFILES, 'bcmk', 'geophy.fst')
     >>> funit  = rmn.fstopenall(myfile)
     >>> meRec  = rmn.fstlir(funit, nomvar='ME')
     >>> meGrid = rmn.readGrid(funit, meRec)
@@ -907,8 +1039,9 @@ def ezgfstp(gdid):
     istat = _rp.c_ezgfstp(gdid, cnomvarx, ctypvarx, cetikx, cnomvary,
                           ctypvary, cetiky, cip1, cip2, cip3, cdateo,
                           cdeet, cnpas, cnbits)
-    if istat >= 0:
-        return {
+    if istat < 0:
+        raise EzscintError()
+    params = {
             'id'    : gdid,
             'typvarx': _C_CHAR2WCHAR(ctypvarx.value),
             'nomvarx': _C_CHAR2WCHAR(cnomvarx.value),
@@ -924,12 +1057,19 @@ def ezgfstp(gdid):
             'npas'  : cnpas.value,
             'nbits' : cnbits.value
             }
-    raise EzscintError()
+    if doSubGrid:
+        params['nsubgrids'] = ezget_nsubgrids(gdid)
+        params['subgridid'] = ezget_subgridids(gdid)
+        params['subgrid'] = []
+        if params['nsubgrids'] > 0:
+            for gid2 in params['subgridid']:
+                params['subgrid'].append(ezgfstp(gid2))
+    return params
 
 
 def gdgaxes(gdid, ax=None, ay=None):
     """
-    Gets the deformation axes of the Z, Y, # grids
+    Gets the deformation axes of the Z, Y, #, U grids
 
     gridAxes = gdgaxes(gdid)
     gridAxes = gdgaxes(gdid, ax, ay)
@@ -948,7 +1088,12 @@ def gdgaxes(gdid, ax=None, ay=None):
         {
             'id' : grid id, same as input arg
             'ax' : x grid axe data (numpy.ndarray)
+                   same as gridAxes['subgrid'][0]['ax']
             'ay' : y grid axe data (numpy.ndarray)
+                   same as gridAxes['subgrid'][0]['ay']
+            'nsubgrids' : Number of subgrids
+            'subgridid' : list of subgrids id
+            'subgrid'   : list of subgrids details {'id', 'ax', 'ay'}
         }
     Raises:
         TypeError    on wrong input arg types
@@ -960,8 +1105,9 @@ def gdgaxes(gdid, ax=None, ay=None):
     >>> import rpnpy.librmn.all as rmn
     >>>
     >>> # Get grid for ME record in file
+    >>> rmn.fstopt(rmn.FSTOP_MSGLVL,rmn.FSTOPI_MSG_CATAST)
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES')
-    >>> myfile = os.path.join(ATM_MODEL_DFILES.strip(),'bcmk','geophy.fst')
+    >>> myfile = os.path.join(ATM_MODEL_DFILES.strip(), 'bcmk', 'geophy.fst')
     >>> funit  = rmn.fstopenall(myfile)
     >>> rec    = rmn.fstlir(funit, nomvar='ME')
     >>> rec['iunit'] = funit
@@ -989,14 +1135,26 @@ def gdgaxes(gdid, ax=None, ay=None):
     """
     ax = _getCheckArg(None, ax, gdid, 'ax')
     ay = _getCheckArg(None, ay, gdid, 'ay')
-    ax = _getCheckArg(None, ax, ax, 'ax')
     ay = _getCheckArg(None, ay, ax, 'ay')
+    ax = _getCheckArg(None, ax, ax, 'ax')
     gdid = _getCheckArg(int, gdid, gdid, 'id')
     nsubgrids = ezget_nsubgrids(gdid)
     if nsubgrids > 1:
-        raise EzscintError("gdgaxes: supergrids not supported yet, " +
-                           " loop through individual grids instead")
-        #TODO: automate the process (loop) for super grids
+        axes = []
+        subgridid = ezget_subgridids(gdid)
+        for id in subgridid:
+            axes.append(gdgaxes(id, ax, ay))
+            ax, ay = None, None
+        if not len(axes):
+            raise EzscintError()
+        return {
+                'id' : gdid,
+                'ax' : axes[0]['ax'],
+                'ay' : axes[0]['ay'],
+                'nsubgrids' : nsubgrids,
+                'subgridid' : subgridid,
+                'subgrid'   : axes
+                }
     gridParams = ezgxprm(gdid)
     axshape = None
     ayshape = None
@@ -1006,7 +1164,6 @@ def gdgaxes(gdid, ax=None, ay=None):
     elif gridParams['grtyp'].lower() in ('z', '#'):
         axshape = (gridParams['shape'][0], 1)
         ayshape = (1, gridParams['shape'][1])
-    #elif gridParams['grtyp'].lower() == 'u': #TODO add support of U/F-grids
     else:
         raise EzscintError("gdgaxes: grtyp/grref = {grtyp}/{grref} not supported".format(**gridParams))
     ax = _ftnOrEmpty(ax, axshape, _np.float32)
@@ -1021,7 +1178,14 @@ def gdgaxes(gdid, ax=None, ay=None):
         return {
             'id' : gdid,
             'ax' : ax,
-            'ay' : ay
+            'ay' : ay,
+            'nsubgrids' : 0,
+            'subgridid' : [gdid],
+            'subgrid'   : [{
+                'id' : gdid,
+                'ax' : ax,
+                'ay' : ay
+                }]
             }
     raise EzscintError()
 
@@ -1047,7 +1211,12 @@ def gdll(gdid, lat=None, lon=None):
         {
             'id'  : grid id, same as input arg
             'lat' : latitude  data (numpy.ndarray)
+                    same as gridLatLon['subgrid'][0]['lat']
             'lon' : longitude data (numpy.ndarray)
+                    same as gridLatLon['subgrid'][0]['lon']
+            'nsubgrids' : Number of subgrids
+            'subgridid' : list of subgrids id
+            'subgrid'   : list of subgrids {'id', 'lat', 'lon'}
         }
     Raises:
         TypeError    on wrong input arg types
@@ -1056,6 +1225,7 @@ def gdll(gdid, lat=None, lon=None):
     Examples:
 
     >>> import rpnpy.librmn.all as rmn
+    >>> rmn.fstopt(rmn.FSTOP_MSGLVL,rmn.FSTOPI_MSG_CATAST)
     >>> grid = rmn.defGrid_G(90, 45)
     >>> lalo = rmn.gdll(grid['id'])
     >>> (i, j) = (45, 20)
@@ -1070,14 +1240,26 @@ def gdll(gdid, lat=None, lon=None):
     """
     lat = _getCheckArg(None, lat, gdid, 'lat')
     lon = _getCheckArg(None, lon, gdid, 'lon')
-    lat = _getCheckArg(None, lat, lat, 'lat')
     lon = _getCheckArg(None, lon, lat, 'lon')
+    lat = _getCheckArg(None, lat, lat, 'lat')
     gdid = _getCheckArg(int, gdid, gdid, 'id')
     nsubgrids = ezget_nsubgrids(gdid)
     if nsubgrids > 1:
-        raise EzscintError("gdll: supergrids not supported yet, " +
-                           "loop through individual grids instead")
-        #TODO: automate the process (loop) for super grids
+        latlon = []
+        subgridid = ezget_subgridids(gdid)
+        for id in subgridid:
+            latlon.append(gdll(id, lat, lon))
+            lat, lon = None, None
+        if not len(latlon):
+            raise EzscintError()
+        return {
+                'id' : gdid,
+                'lat' : latlon[0]['lat'],
+                'lon' : latlon[0]['lon'],
+                'nsubgrids' : nsubgrids,
+                'subgridid' : subgridid,
+                'subgrid'   : latlon
+                }
     gridParams = ezgxprm(gdid)
     lat = _ftnOrEmpty(lat, gridParams['shape'], _np.float32)
     lon = _ftnOrEmpty(lon, gridParams['shape'], _np.float32)
@@ -1091,7 +1273,14 @@ def gdll(gdid, lat=None, lon=None):
         return {
             'id'  : gdid,
             'lat' : lat,
-            'lon' : lon
+            'lon' : lon,
+            'nsubgrids' : 0,
+            'subgridid' : [gdid],
+            'subgrid'   : [{
+                'id'  : gdid,
+                'lat' : lat,
+                'lon' : lon,
+                }]
             }
     raise EzscintError()
 
@@ -1131,6 +1320,7 @@ def gdxyfll(gdid, lat=None, lon=None):
     Example:
 
     >>> import rpnpy.librmn.all as rmn
+    >>> rmn.fstopt(rmn.FSTOP_MSGLVL,rmn.FSTOPI_MSG_CATAST)
     >>> grid = rmn.defGrid_G(90, 45)
     >>> (la, lo) = (45., 273.)
     >>> xy = rmn.gdxyfll(grid['id'], [la], [lo])
@@ -1143,10 +1333,11 @@ def gdxyfll(gdid, lat=None, lon=None):
         gdll
         rpnpy.librmn.grids
     """
+    #TODO: what about multi-grids? multi values of x,y for each lat,lon pair?
     lat = _getCheckArg(None, lat, gdid, 'lat')
     lon = _getCheckArg(None, lon, gdid, 'lon')
-    lat = _getCheckArg(None, lat, lat, 'lat')
     lon = _getCheckArg(None, lon, lat, 'lon')
+    lat = _getCheckArg(None, lat, lat, 'lat')
     gdid = _getCheckArg(int, gdid, gdid, 'id')
     clat = _list2ftnf32(lat)
     clon = _list2ftnf32(lon)
@@ -1155,8 +1346,8 @@ def gdxyfll(gdid, lat=None, lon=None):
                         format(type(clat), type(clon)))
     if clat.size != clon.size:
         raise TypeError("gdxyfll: provided lat, lon should have the same size")
-    cx = _np.empty(clat.shape, dtype=_np.float32, order='FORTRAN')
-    cy = _np.empty(clat.shape, dtype=_np.float32, order='FORTRAN')
+    cx = _np.empty(clat.shape, dtype=_np.float32, order='F')
+    cy = _np.empty(clat.shape, dtype=_np.float32, order='F')
     istat = _rp.c_gdxyfll(gdid, cx, cy, clat, clon, clat.size)
     if istat >= 0:
         return {
@@ -1205,6 +1396,7 @@ def gdllfxy(gdid, xpts=None, ypts=None):
     Examples:
 
     >>> import rpnpy.librmn.all as rmn
+    >>> rmn.fstopt(rmn.FSTOP_MSGLVL,rmn.FSTOPI_MSG_CATAST)
     >>> grid = rmn.defGrid_G(90, 45)
     >>> (i, j) = (69, 34)
     >>> lalo = rmn.gdllfxy(grid['id'], [i], [j])
@@ -1217,10 +1409,11 @@ def gdllfxy(gdid, xpts=None, ypts=None):
         gdxyfll
         rpnpy.librmn.grids
     """
+    #TODO: what about multi-grids? multi values of lat,lon for each x,y pair?
     xpts = _getCheckArg(None, xpts, gdid, 'xpts')
     ypts = _getCheckArg(None, ypts, gdid, 'ypts')
-    xpts = _getCheckArg(None, xpts, xpts, 'xpts')
     ypts = _getCheckArg(None, ypts, xpts, 'ypts')
+    xpts = _getCheckArg(None, xpts, xpts, 'xpts')
     gdid = _getCheckArg(int, gdid, gdid, 'id')
     cx = _list2ftnf32(xpts)
     cy = _list2ftnf32(ypts)
@@ -1229,8 +1422,8 @@ def gdllfxy(gdid, xpts=None, ypts=None):
     if cx.size != cy.size:
         raise TypeError(
             "gdllfxy: provided xpts, ypts should have the same size")
-    clat = _np.empty(cx.shape, dtype=_np.float32, order='FORTRAN')
-    clon = _np.empty(cx.shape, dtype=_np.float32, order='FORTRAN')
+    clat = _np.empty(cx.shape, dtype=_np.float32, order='F')
+    clon = _np.empty(cx.shape, dtype=_np.float32, order='F')
     istat = _rp.c_gdllfxy(gdid, clat, clon, cx, cy, cx.size)
     if istat >= 0:
         return {
@@ -1274,8 +1467,9 @@ def gdgetmask(gdid, mask=None):
     >>> import rpnpy.librmn.all as rmn
     >>>
     >>> # Read source data and define its grid
+    >>> rmn.fstopt(rmn.FSTOP_MSGLVL,rmn.FSTOPI_MSG_CATAST)
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES')
-    >>> myfile = os.path.join(ATM_MODEL_DFILES.strip(),'bcmk','geophy.fst')
+    >>> myfile = os.path.join(ATM_MODEL_DFILES.strip(), 'bcmk', 'geophy.fst')
     >>> funit  = rmn.fstopenall(myfile)
     >>> mgRec  = rmn.fstlir(funit, nomvar='MG')
     >>> meRec  = rmn.fstlir(funit, nomvar='ME')
@@ -1319,7 +1513,7 @@ def gdgetmask(gdid, mask=None):
 
 #---- Interpolation Functions
 
-#TODO: ezsint, when given dict for grids, return dict then?
+#TODO: ezsint, when given dict for grids, return dict then (would need new fn)?
 def ezsint(gdidout, gdidin, zin, zout=None):
     """
     Scalar horizontal interpolation
@@ -1348,8 +1542,9 @@ def ezsint(gdidout, gdidin, zin, zout=None):
     >>> import rpnpy.librmn.all as rmn
     >>>
     >>> # Read source data and define its grid
+    >>> rmn.fstopt(rmn.FSTOP_MSGLVL,rmn.FSTOPI_MSG_CATAST)
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES')
-    >>> myfile = os.path.join(ATM_MODEL_DFILES.strip(),'bcmk','geophy.fst')
+    >>> myfile = os.path.join(ATM_MODEL_DFILES.strip(), 'bcmk', 'geophy.fst')
     >>> funit  = rmn.fstopenall(myfile)
     >>> meRec  = rmn.fstlir(funit, nomvar='ME')
     >>> inGrid = rmn.readGrid(funit, meRec)
@@ -1395,7 +1590,7 @@ def ezsint(gdidout, gdidin, zin, zout=None):
     raise EzscintError()
 
 
-#TODO: ezuvint, when given dict for grids, return dict then?
+#TODO: ezuvint, when given dict for grids, return dict then (would need new fn)?
 def ezuvint(gdidout, gdidin, uuin, vvin, uuout=None, vvout=None):
     """
     Vectorial horizontal interpolation
@@ -1428,10 +1623,11 @@ def ezuvint(gdidout, gdidin, uuin, vvin, uuout=None, vvout=None):
     >>> import rpnpy.librmn.all as rmn
     >>>
     >>> # Read source data and define its grid
+    >>> rmn.fstopt(rmn.FSTOP_MSGLVL,rmn.FSTOPI_MSG_CATAST)
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES')
-    >>> myfile = os.path.join(ATM_MODEL_DFILES.strip(),'bcmk','2009042700_000')
+    >>> myfile = os.path.join(ATM_MODEL_DFILES.strip(), 'bcmk', '2009042700_000')
     >>> funit  = rmn.fstopenall(myfile)
-    >>> uuRec  = rmn.fstlir(funit, nomvar='UU')
+    >>> uuRec  = rmn.fstlir(funit, nomvar='UU', ip1=93423264)
     >>> vvRec  = rmn.fstlir(funit, nomvar='VV', ip1=uuRec['ip1'], ip2=uuRec['ip2'])
     >>> inGrid = rmn.readGrid(funit, uuRec)
     >>> rmn.fstcloseall(funit)
@@ -1511,15 +1707,16 @@ def gdllsval(gdid, lat, lon, zin, zout=None):
     >>> import rpnpy.librmn.all as rmn
     >>>
     >>> # Read source data and define its grid
+    >>> rmn.fstopt(rmn.FSTOP_MSGLVL,rmn.FSTOPI_MSG_CATAST)
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES')
-    >>> myfile = os.path.join(ATM_MODEL_DFILES.strip(),'bcmk','geophy.fst')
+    >>> myfile = os.path.join(ATM_MODEL_DFILES.strip(), 'bcmk', 'geophy.fst')
     >>> funit  = rmn.fstopenall(myfile)
     >>> meRec  = rmn.fstlir(funit, nomvar='ME')
     >>> inGrid = rmn.readGrid(funit, meRec)
     >>> rmn.fstcloseall(funit)
     >>>
     >>> # Interpolate ME to a specific set of points
-    >>> destPoints = ((35.5, 266.), (36., 265.5))
+    >>> destPoints = ((35.5, 10.), (36., 10.5))
     >>> la = [x[0] for x in destPoints]
     >>> lo = [x[1] for x in destPoints]
     >>> meValues = rmn.gdllsval(inGrid['id'], la,lo, meRec['d'])
@@ -1596,18 +1793,20 @@ def gdxysval(gdid, xpts, ypts, zin, zout=None):
     >>> import rpnpy.librmn.all as rmn
     >>>
     >>> # Read source data and define its grid
+    >>> rmn.fstopt(rmn.FSTOP_MSGLVL,rmn.FSTOPI_MSG_CATAST)
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES')
-    >>> myfile = os.path.join(ATM_MODEL_DFILES.strip(),'bcmk','geophy.fst')
+    >>> myfile = os.path.join(ATM_MODEL_DFILES.strip(), 'bcmk', 'geophy.fst')
     >>> funit  = rmn.fstopenall(myfile)
     >>> meRec  = rmn.fstlir(funit, nomvar='ME')
     >>> inGrid = rmn.readGrid(funit, meRec)
     >>> rmn.fstcloseall(funit)
     >>>
     >>> # Interpolate ME to a specific set of points
-    >>> destPoints = ((148., 70.), (149., 71.))
-    >>> xx = [x[0] for x in destPoints]
-    >>> yy = [x[1] for x in destPoints]
-    >>> meValues = rmn.gdxysval(inGrid['id'], xx,yy, meRec['d'])
+    >>> destPoints = ((35.5, 10.), (36., 10.5))
+    >>> la = [x[0] for x in destPoints]
+    >>> lo = [x[1] for x in destPoints]
+    >>> xy = rmn.gdxyfll(inGrid['id'], la, lo)
+    >>> meValues = rmn.gdxysval(inGrid['id'], xy['x'], xy['y'], meRec['d'])
 
     See Also:
         gdllsval
@@ -1678,24 +1877,26 @@ def gdllvval(gdid, lat, lon, uuin, vvin, uuout=None, vvout=None):
     >>> import rpnpy.librmn.all as rmn
     >>>
     >>> # Read source data and define its grid
+    >>> rmn.fstopt(rmn.FSTOP_MSGLVL,rmn.FSTOPI_MSG_CATAST)
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES')
-    >>> myfile = os.path.join(ATM_MODEL_DFILES.strip(),'bcmk')
+    >>> myfile = os.path.join(ATM_MODEL_DFILES.strip(), 'bcmk', '2009042700_000')
     >>> funit  = rmn.fstopenall(myfile)
-    >>> uuRec  = rmn.fstlir(funit, nomvar='UU')
-    >>> vvRec  = rmn.fstlir(funit, nomvar='VV')
+    >>> uuRec  = rmn.fstlir(funit, nomvar='UU', ip1=93423264)
+    >>> vvRec  = rmn.fstlir(funit, nomvar='VV', ip1=uuRec['ip1'], ip2=uuRec['ip2'])
     >>> inGrid = rmn.readGrid(funit, uuRec)
     >>> rmn.fstcloseall(funit)
     >>>
     >>> # Interpolate UV vectorially to a specific set of points
-    >>> destPoints = ((35.5, 266.), (36., 265.5))
+    >>> destPoints = ((35.5, 10.), (36., 10.5))
     >>> la = [x[0] for x in destPoints]
     >>> lo = [x[1] for x in destPoints]
-    >>> (uu, vv) = rmn.gdllvval(inGrid['id'], la,lo, uuRec['d'], vvRec['d'])
+    >>> (uu, vv) = rmn.gdllvval(inGrid['id'], la, lo, uuRec['d'], vvRec['d'])
 
     See Also:
         gdllsval
         gdxysval
         gdxyvval
+        gdllwdval
         ezsint
         ezuvint
         ezsetopt
@@ -1774,24 +1975,27 @@ def gdxyvval(gdid, xpts, ypts, uuin, vvin, uuout=None, vvout=None):
     >>> import rpnpy.librmn.all as rmn
     >>>
     >>> # Read source data and define its grid
+    >>> rmn.fstopt(rmn.FSTOP_MSGLVL,rmn.FSTOPI_MSG_CATAST)
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES')
-    >>> myfile = os.path.join(ATM_MODEL_DFILES.strip(),'bcmk')
+    >>> myfile = os.path.join(ATM_MODEL_DFILES.strip(), 'bcmk', '2009042700_000')
     >>> funit  = rmn.fstopenall(myfile)
-    >>> uuRec  = rmn.fstlir(funit, nomvar='UU')
-    >>> vvRec  = rmn.fstlir(funit, nomvar='VV')
+    >>> uuRec  = rmn.fstlir(funit, nomvar='UU', ip1=93423264)
+    >>> vvRec  = rmn.fstlir(funit, nomvar='VV', ip1=uuRec['ip1'], ip2=uuRec['ip2'])
     >>> inGrid = rmn.readGrid(funit, uuRec)
     >>> rmn.fstcloseall(funit)
     >>>
     >>> # Interpolate UV vectorially to a specific set of points
-    >>> destPoints = ((148., 70.), (149., 71.))
-    >>> xx = [x[0] for x in destPoints]
-    >>> yy = [x[1] for x in destPoints]
-    >>> (uu, vv) = rmn.gdxyvval(inGrid['id'], xx,yy, uuRec['d'], vvRec['d'])
+    >>> destPoints = ((35.5, 10.), (36., 10.5))
+    >>> la = [x[0] for x in destPoints]
+    >>> lo = [x[1] for x in destPoints]
+    >>> xy = rmn.gdxyfll(inGrid['id'], la, lo)
+    >>> (uu, vv) = rmn.gdxyvval(inGrid['id'], xy['x'], xy['y'], uuRec['d'], vvRec['d'])
 
     See Also:
         gdllsval
         gdxysval
         gdllvval
+        gdllwdval
         ezsint
         ezuvint
         ezsetopt
@@ -1837,13 +2041,417 @@ def gdxyvval(gdid, xpts, ypts, uuin, vvin, uuout=None, vvout=None):
         return (uuout, vvout)
     raise EzscintError()
 
-
-#TODO:    c_gdllwdval(gdid, spdout, wdout, uuin, vvin, lat, lon, n)
-#TODO:    c_gdxywdval(gdin, uuout, vvout, uuin, vvin, x, y, n)
-
 #TODO:    c_ezsint_mdm(zout, mask_out, zin, mask_in)
 #TODO:    c_ezuvint_mdm(uuout, vvout, mask_out, uuin, vvin, mask_in)
 #TODO:    c_ezsint_mask(mask_out, mask_in)
+
+#TODO: need fixing before making public
+def _gdwdfuv(gdid, lat, lon, uuin, vvin, wsout=None, wdout=None):
+    """
+    Converts, on grid 'gdid', the grid winds at grid points speed/direction.
+    The lat/lon coordinates of each point have to be present.
+
+    (ws, wd) = gdwdfuv(gdid, lat, lon, uuin, vvin)
+    (ws, wd) = gdwdfuv(gdid, lat, lon, uuin, vvin, wsout, wdout)
+
+    Args:
+        gdid    : id of the grid (int or dict)
+                  Dict with key 'id' is accepted from version 2.0.rc1
+        lat     : list of resquested points lat (list or numpy.ndarray)
+        lon     : list of resquested points lon (list or numpy.ndarray)
+        uuin, vvin   : data to interpolate, on grid gdid (numpy.ndarray or dict)
+                       Dict with key 'd' is accepted from version 2.0.rc1
+        wsout, wdout : optional, interp.result array, same shape a lat, lon
+                       wind-speed and wind-direction (numpy.ndarray)
+    Returns:
+        (wsout, wdout), tuple of 2 numpy.ndarray, interpolation result,
+        same shape a lat, lon
+    Raises:
+        TypeError    on wrong input arg types
+        EzscintError on any other error
+
+    Examples:
+    >>> import os, os.path
+    >>> import numpy as np
+    >>> import rpnpy.librmn.all as rmn
+    >>>
+    >>> # Read source data and define its grid
+    >>> rmn.fstopt(rmn.FSTOP_MSGLVL,rmn.FSTOPI_MSG_CATAST)
+    >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES')
+    >>> myfile = os.path.join(ATM_MODEL_DFILES.strip(), 'bcmk', '2009042700_000')
+    >>> funit  = rmn.fstopenall(myfile)
+    >>> uuRec  = rmn.fstlir(funit, nomvar='UU', ip1=93423264)
+    >>> vvRec  = rmn.fstlir(funit, nomvar='VV', ip1=uuRec['ip1'], ip2=uuRec['ip2'])
+    >>> inGrid = rmn.readGrid(funit, uuRec)
+    >>> rmn.fstcloseall(funit)
+    >>>
+    >>> # Interpolate UV vectorially to a specific set of points
+    >>> ni, nj = uuRec['d'].shape
+    >>> destPoints = ((ni//4, nj//2), (ni//2, nj//2))
+    >>> xx = [float(x[0]) for x in destPoints]
+    >>> yy = [float(x[1]) for x in destPoints]
+    >>> ll = gdllfxy(inGrid['id'], xx, yy)
+    >>> # (ws, wd) = rmn.gdwdfuv(inGrid['id'], ll['lat'], ll['lon'], uuRec['d'], vvRec['d'])
+
+
+    See Also:
+        gduvfwd
+        gdllsval
+        gdxysval
+        gdllvval
+        gdxyvval
+        gdllwdval
+        gdxywdval
+        ezsint
+        ezuvint
+        ezsetopt
+        rpnpy.librmn.const
+        rpnpy.librmn.fstd98.fstopenall
+        rpnpy.librmn.fstd98.fstlir
+        rpnpy.librmn.fstd98.fstcloseall
+        rpnpy.librmn.grids.readGrid
+        rpnpy.librmn.grids.defGrid_L
+        rpnpy.librmn.grids.encodeGrid
+    """
+    gdid = _getCheckArg(int, gdid, gdid, 'id')
+    uuin = _getCheckArg(_np.ndarray, uuin, uuin, 'd')
+    vvin = _getCheckArg(_np.ndarray, vvin, vvin, 'd')
+    gridParams = ezgxprm(gdid)
+    uuin  = _ftnf32(uuin)
+    vvin  = _ftnf32(vvin)
+    if uuin.shape != gridParams['shape']:
+        raise TypeError("gdllvval: Provided uuin array have inconsistent " +
+                        "shape compered to the input grid")
+    if vvin.shape != gridParams['shape']:
+        raise TypeError("gdllvval: Provided vvin array have inconsistent " +
+                        "shape compered to the input grid")
+    clat = _list2ftnf32(lat)
+    clon = _list2ftnf32(lon)
+    if not (isinstance(clat, _np.ndarray) and isinstance(clon, _np.ndarray)):
+        raise TypeError("lat and lon must be arrays: {0}, {1}".
+                        format(type(clat), type(clon)))
+    if clat.shape != clon.shape:
+        raise TypeError("Provided lat, lon arrays have inconsistent shapes")
+    dshape = clat.shape
+    wsout = _ftnOrEmpty(wsout, dshape, uuin.dtype)
+    wdout = _ftnOrEmpty(wdout, dshape, uuin.dtype)
+    if not (isinstance(wsout, _np.ndarray) and wsout.shape == dshape):
+        raise TypeError("Wrong type,shape for wsout: {0}, {1}"\
+                        .format(type(wsout), repr(dshape)))
+    if not (isinstance(wdout, _np.ndarray) and wdout.shape == dshape):
+        raise TypeError("Wrong type,shape for wsout: {0}, {1}"\
+                        .format(type(wdout), repr(dshape)))
+    istat = _rp.c_gdwdfuv(gdid, wsout, wdout, uuin, vvin, clat,
+                          clon, clat.size)
+    if istat >= 0:
+        return (wsout, wdout)
+    raise EzscintError()
+
+
+#TODO: need fixing before making public
+def _gduvfwd(gdid, lat, lon, wsin, wdin, uuout=None, vvout=None):
+    """
+    Converts, on grid 'gdid', the direction/speed values at grid points
+    to grid coordinates.
+    The lat/lon coordinates of each point have to be present.
+
+    (uuout, vvout) = gdwdfuv(gdid, lat, lon, wsin, wdin)
+    (uuout, vvout) = gdwdfuv(gdid, lat, lon, wsin, wdin, uuout, vvout)
+
+    Args:
+        gdid    : id of the grid (int or dict)
+                  Dict with key 'id' is accepted from version 2.0.rc1
+        lat     : list of resquested points lat (list or numpy.ndarray)
+        lon     : list of resquested points lon (list or numpy.ndarray)
+        wsin, wdin   : data to interpolate, on grid gdid (numpy.ndarray or dict)
+                       Dict with key 'd' is accepted from version 2.0.rc1
+        uuout, vvout : optional, interp.result array, same shape a lat, lon
+                       (numpy.ndarray)
+    Returns:
+        (uuout, vvout), tuple of 2 numpy.ndarray, interpolation result,
+        same shape a lat, lon
+    Raises:
+        TypeError    on wrong input arg types
+        EzscintError on any other error
+
+    Examples:
+    >>> import os, os.path
+    >>> import numpy as np
+    >>> import rpnpy.librmn.all as rmn
+    >>>
+    >>> # Read source data and define its grid
+    >>> rmn.fstopt(rmn.FSTOP_MSGLVL,rmn.FSTOPI_MSG_CATAST)
+    >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES')
+    >>> myfile = os.path.join(ATM_MODEL_DFILES.strip(), 'bcmk', '2009042700_000')
+    >>> funit  = rmn.fstopenall(myfile)
+    >>> uuRec  = rmn.fstlir(funit, nomvar='UU', ip1=93423264)
+    >>> vvRec  = rmn.fstlir(funit, nomvar='VV', ip1=uuRec['ip1'], ip2=uuRec['ip2'])
+    >>> inGrid = rmn.readGrid(funit, uuRec)
+    >>> rmn.fstcloseall(funit)
+    >>>
+    >>> # Interpolate UV vectorially to a specific set of points
+    >>> lalo = rmn.gdll(inGrid['id'])
+    >>> # (ws, wd) = rmn.gdwdfuv(inGrid['id'], lalo['lat'], lalo['lon'], uuRec['d'], vvRec['d'])
+    >>> # (uu, vv) = rmn.gduvfwd(inGrid['id'], lalo['lat'], lalo['lon'], ws, wd)
+
+    See Also:
+        gduvfwd
+        gdllsval
+        gdxysval
+        gdllvval
+        gdxyvval
+        gdllwdval
+        gdxywdval
+        ezsint
+        ezuvint
+        ezsetopt
+        rpnpy.librmn.const
+        rpnpy.librmn.fstd98.fstopenall
+        rpnpy.librmn.fstd98.fstlir
+        rpnpy.librmn.fstd98.fstcloseall
+        rpnpy.librmn.grids.readGrid
+        rpnpy.librmn.grids.defGrid_L
+        rpnpy.librmn.grids.encodeGrid
+    """
+    gdid = _getCheckArg(int, gdid, gdid, 'id')
+    wsin = _getCheckArg(_np.ndarray, wsin, wsin, 'd')
+    wdin = _getCheckArg(_np.ndarray, wdin, wdin, 'd')
+    gridParams = ezgxprm(gdid)
+    wsin  = _ftnf32(wsin)
+    wdin  = _ftnf32(wdin)
+    if wsin.shape != gridParams['shape']:
+        raise TypeError("gdllvval: Provided wsin array have inconsistent " +
+                        "shape compered to the input grid")
+    if wdin.shape != gridParams['shape']:
+        raise TypeError("gdllvval: Provided wdin array have inconsistent " +
+                        "shape compered to the input grid")
+    clat = _list2ftnf32(lat)
+    clon = _list2ftnf32(lon)
+    if not (isinstance(clat, _np.ndarray) and isinstance(clon, _np.ndarray)):
+        raise TypeError("lat and lon must be arrays: {0}, {1}".
+                        format(type(clat), type(clon)))
+    if clat.shape != clon.shape:
+        raise TypeError("Provided lat, lon arrays have inconsistent shapes")
+    dshape = clat.shape
+    uuout = _ftnOrEmpty(uuout, dshape, wsin.dtype)
+    vvout = _ftnOrEmpty(vvout, dshape, wsin.dtype)
+    if not (isinstance(uuout, _np.ndarray) and uuout.shape == dshape):
+        raise TypeError("Wrong type,shape for uuout: {0}, {1}"\
+                        .format(type(uuout), repr(dshape)))
+    if not (isinstance(vvout, _np.ndarray) and vvout.shape == dshape):
+        raise TypeError("Wrong type,shape for uuout: {0}, {1}"\
+                        .format(type(vvout), repr(dshape)))
+    istat = _rp.c_gdwdfuv(gdid, uuout, vvout, wsin, wdin, clat,
+                          clon, clat.size)
+    if istat >= 0:
+        return (uuout, vvout)
+    raise EzscintError()
+
+
+def gdllwdval(gdid, lat, lon, uuin, vvin, wsout=None, wdout=None):
+    """
+    Vectorial interpolation of points located at lat-lon coordinates,
+    returned as speed and direction (WS and WD).
+
+    (ws, wd) = gdllwdval(gdid, lat, lon, uuin, vvin)
+    (ws, wd) = gdllwdval(gdid, lat, lon, uuin, vvin, wsout, wdout)
+
+    Args:
+        gdid    : id of the grid (int or dict)
+                  Dict with key 'id' is accepted from version 2.0.rc1
+        lat     : list of resquested points lat (list or numpy.ndarray)
+        lon     : list of resquested points lon (list or numpy.ndarray)
+        uuin, vvin   : data to interpolate, on grid gdid (numpy.ndarray or dict)
+                       Dict with key 'd' is accepted from version 2.0.rc1
+        wsout, wdout : optional, interp.result array, same shape a lat, lon
+                       wind-speed and wind-direction (numpy.ndarray)
+    Returns:
+        (wsout, wdout), tuple of 2 numpy.ndarray, interpolation result,
+        same shape a lat, lon
+    Raises:
+        TypeError    on wrong input arg types
+        EzscintError on any other error
+
+    Examples:
+    >>> import os, os.path
+    >>> import rpnpy.librmn.all as rmn
+    >>>
+    >>> # Read source data and define its grid
+    >>> rmn.fstopt(rmn.FSTOP_MSGLVL,rmn.FSTOPI_MSG_CATAST)
+    >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES')
+    >>> myfile = os.path.join(ATM_MODEL_DFILES.strip(), 'bcmk', '2009042700_000')
+    >>> funit  = rmn.fstopenall(myfile)
+    >>> uuRec  = rmn.fstlir(funit, nomvar='UU', ip1=93423264)
+    >>> vvRec  = rmn.fstlir(funit, nomvar='VV', ip1=uuRec['ip1'], ip2=uuRec['ip2'])
+    >>> inGrid = rmn.readGrid(funit, uuRec)
+    >>> rmn.fstcloseall(funit)
+    >>>
+    >>> # Interpolate UV vectorially to a specific set of points
+    >>> destPoints = ((35.5, 10.), (36., 10.5))
+    >>> la = [x[0] for x in destPoints]
+    >>> lo = [x[1] for x in destPoints]
+    >>> (ws, wd) = rmn.gdllwdval(inGrid['id'], la, lo, uuRec['d'], vvRec['d'])
+    >>> print("# (ws,wd) pt1:({}, {}) pt2:({}, {})"
+    ...       .format(int(round(ws[0])), int(round(wd[0])),
+    ...               int(round(ws[1])), int(round(wd[1]))))
+    # (ws,wd) pt1:(8, 119) pt2:(12, 125)
+
+    See Also:
+        gdllsval
+        gdxysval
+        gdllvval
+        gdxyvval
+        gdxywdval
+        ezsint
+        ezuvint
+        ezsetopt
+        rpnpy.librmn.const
+        rpnpy.librmn.fstd98.fstopenall
+        rpnpy.librmn.fstd98.fstlir
+        rpnpy.librmn.fstd98.fstcloseall
+        rpnpy.librmn.grids.readGrid
+        rpnpy.librmn.grids.defGrid_L
+        rpnpy.librmn.grids.encodeGrid
+    """
+    gdid = _getCheckArg(int, gdid, gdid, 'id')
+    uuin = _getCheckArg(_np.ndarray, uuin, uuin, 'd')
+    vvin = _getCheckArg(_np.ndarray, vvin, vvin, 'd')
+    gridParams = ezgxprm(gdid)
+    uuin  = _ftnf32(uuin)
+    vvin  = _ftnf32(vvin)
+    if uuin.shape != gridParams['shape']:
+        raise TypeError("gdllvval: Provided uuin array have inconsistent " +
+                        "shape compered to the input grid")
+    if vvin.shape != gridParams['shape']:
+        raise TypeError("gdllvval: Provided vvin array have inconsistent " +
+                        "shape compered to the input grid")
+    clat = _list2ftnf32(lat)
+    clon = _list2ftnf32(lon)
+    if not (isinstance(clat, _np.ndarray) and isinstance(clon, _np.ndarray)):
+        raise TypeError("lat and lon must be arrays: {0}, {1}".
+                        format(type(clat), type(clon)))
+    if clat.shape != clon.shape:
+        raise TypeError("Provided lat, lon arrays have inconsistent shapes")
+    dshape = clat.shape
+    wsout = _ftnOrEmpty(wsout, dshape, uuin.dtype)
+    wdout = _ftnOrEmpty(wdout, dshape, uuin.dtype)
+    if not (isinstance(wsout, _np.ndarray) and wsout.shape == dshape):
+        raise TypeError("Wrong type,shape for wsout: {0}, {1}"\
+                        .format(type(wsout), repr(dshape)))
+    if not (isinstance(wdout, _np.ndarray) and wdout.shape == dshape):
+        raise TypeError("Wrong type,shape for wsout: {0}, {1}"\
+                        .format(type(wdout), repr(dshape)))
+    istat = _rp.c_gdllwdval(gdid, wsout, wdout, uuin, vvin, clat,
+                            clon, clat.size)
+    if istat >= 0:
+        return (wsout, wdout)
+    raise EzscintError()
+
+
+def gdxywdval(gdid, xpts, ypts, uuin, vvin, wsout=None, wdout=None):
+    """
+    Vectorial intepolation to points located at x-y coordinates
+    returned as speed and direction (WS and WD).
+
+    Note that provided grid points coor. are considered
+    to be Fortran indexing, from 1 to ni and from 1 to nj
+    While numpy/C indexing starts from 0
+
+    (wsout, wdout) = gdxywdval(gdid, xpts, ypts, uuin, vvin)
+    (wsout, wdout) = gdxywdval(gdid, xpts, ypts, uuin, vvin, wsout, wdout)
+
+    Args:
+        gdid     : id of the grid(int or dict)
+                   Dict with key 'id' is accepted from version 2.0.rc1
+        xpts     : list of resquested points x-coor (list or numpy.ndarray)
+        ypts     : list of resquested points y-coor (list or numpy.ndarray)
+        uuin, vvin   : data to interpolate, on grid gdid (numpy.ndarray or dict)
+                       Dict with key 'd' is accepted from version 2.0.rc1
+        wsout, wdout : optional, interp.result array, same shape a xpts, ypts
+                       wind-speed and wind-direction (numpy.ndarray)
+    Returns:
+        (wsout, wdout), tuple of 2 numpy.ndarray, interpolation result,
+        same shape a lat, lon
+    Raises:
+        TypeError    on wrong input arg types
+        EzscintError on any other error
+
+    Examples:
+    >>> import os, os.path
+    >>> import rpnpy.librmn.all as rmn
+    >>>
+    >>> # Read source data and define its grid
+    >>> rmn.fstopt(rmn.FSTOP_MSGLVL,rmn.FSTOPI_MSG_CATAST)
+    >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES')
+    >>> myfile = os.path.join(ATM_MODEL_DFILES.strip(), 'bcmk', '2009042700_000')
+    >>> funit  = rmn.fstopenall(myfile)
+    >>> uuRec  = rmn.fstlir(funit, nomvar='UU', ip1=93423264)
+    >>> vvRec  = rmn.fstlir(funit, nomvar='VV', ip1=uuRec['ip1'], ip2=uuRec['ip2'])
+    >>> inGrid = rmn.readGrid(funit, uuRec)
+    >>> rmn.fstcloseall(funit)
+    >>>
+    >>> # Interpolate UV vectorially to a specific set of points
+    >>> destPoints = ((35.5, 10.), (36., 10.5))
+    >>> la = [x[0] for x in destPoints]
+    >>> lo = [x[1] for x in destPoints]
+    >>> xy = rmn.gdxyfll(inGrid['id'], la, lo)
+    >>> (ws, wd) = rmn.gdxywdval(inGrid['id'], xy['x'], xy['y'], uuRec['d'], vvRec['d'])
+    >>> print("# (ws,wd) pt1:({}, {}) pt2:({}, {})"
+    ...       .format(int(round(ws[0])), int(round(wd[0])),
+    ...               int(round(ws[1])), int(round(wd[1]))))
+    # (ws,wd) pt1:(8, 119) pt2:(12, 125)
+
+    See Also:
+        gdllsval
+        gdxysval
+        gdllvval
+        gdxyvval
+        gdllwdval
+        ezsint
+        ezuvint
+        ezsetopt
+        rpnpy.librmn.const
+        rpnpy.librmn.fstd98.fstopenall
+        rpnpy.librmn.fstd98.fstlir
+        rpnpy.librmn.fstd98.fstcloseall
+        rpnpy.librmn.grids.readGrid
+        rpnpy.librmn.grids.defGrid_L
+        rpnpy.librmn.grids.encodeGrid
+    """
+    gdid = _getCheckArg(int, gdid, gdid, 'id')
+    uuin = _getCheckArg(_np.ndarray, uuin, uuin, 'd')
+    vvin = _getCheckArg(_np.ndarray, vvin, vvin, 'd')
+    gridParams = ezgxprm(gdid)
+    uuin  = _ftnf32(uuin)
+    vvin  = _ftnf32(vvin)
+    if uuin.shape != gridParams['shape']:
+        raise TypeError("gdllvval: Provided uuin array have inconsistent " +
+                        "shape compered to the input grid")
+    if vvin.shape != gridParams['shape']:
+        raise TypeError("gdllvval: Provided vvin array have inconsistent " +
+                        "shape compered to the input grid")
+    cx = _list2ftnf32(xpts)
+    cy = _list2ftnf32(ypts)
+    if not (isinstance(cx, _np.ndarray) and isinstance(cy, _np.ndarray)):
+        raise TypeError("xpts and ypts must be arrays")
+    if cx.size != cy.size:
+        raise TypeError(
+            "provided xpts, ypts should have the same size")
+    dshape = cx.shape
+    wsout = _ftnOrEmpty(wsout, dshape, uuin.dtype)
+    wdout = _ftnOrEmpty(wdout, dshape, uuin.dtype)
+    if not (isinstance(wsout, _np.ndarray) and wsout.shape == dshape):
+        raise TypeError("Wrong type,shape for wsout: {0}, {1}"\
+                        .format(type(wsout), repr(dshape)))
+    if not (isinstance(wdout, _np.ndarray) and wdout.shape == dshape):
+        raise TypeError("Wrong type,shape for wsout: {0}, {1}"\
+                        .format(type(wdout), repr(dshape)))
+    istat = _rp.c_gdxywdval(gdid, wsout, wdout, uuin, vvin,
+                            cx, cy, cx.size)
+    if istat >= 0:
+        return (wsout, wdout)
+    raise EzscintError()
+
 
 #---- Other Functions
 
@@ -1892,8 +2500,93 @@ def gdrls(gdid):
             raise EzscintError()
     return None
 
-#TODO:    c_gduvfwd(gdid, uuout, vvout, spdin, wdin, lat, lon, n)
-#TODO:    c_gdwdfuv(gdid, spdout, wdout, uuin, vvin, lat, lon, n)
+
+def ezcalcdist(lat1, lon1, lat2, lon2):
+    """
+    This function computes the distance between 2 latlon points
+    on the sphere (double precision).
+
+    Source of the formula :
+        http://mathworld.wolfram.com/GreatCircle.html
+
+    dist = ezcalcdist(lat1, lon1, lat2, lon2)
+
+    Args:
+        lat1, lon1 : latitude, longitude of the first point [deg]
+        lat2, lon2 : latitude, longitude of second point [deg]
+    Returns:
+        float, distance on the sphere between the points [m]
+    Raises:
+        TypeError on wrong input arg types
+
+    Examples:
+    >>> import rpnpy.librmn.all as rmn
+    >>> dist = rmn.ezcalcdist(45, 270, 45, 271)
+    >>> print("dist = {}".format(int(dist)))
+    dist = 78626
+
+    See Also:
+        ezcalcarea
+    """
+    (clat1, clon1, clat2, clon2) = (_ct.c_float(lat1), _ct.c_float(lon1),
+                                    _ct.c_float(lat2), _ct.c_float(lon2))
+    dist = 0
+    cdist = _ct.c_double(dist)
+    _rp.c_ez_calcdist2(_ct.byref(cdist), clat1, clon1, clat2, clon2)
+    return cdist.value
+
+
+def ezcalcarea(lats, lons):
+    """
+    This function computes the area on the sphere of
+    the solid polygon formed by 2 or 4 latlon points.
+
+    Source of the formula :
+        http://mathworld.wolfram.com/GreatCircle.html
+        http://mathworld.wolfram.com/SphericalTrigonometry.html
+        http://mathworld.wolfram.com/SphericalTriangle.html
+
+    area = ezcalcarea(lats, lons)
+
+    Args:
+        lats : latitudes of 2/4 points defining the rectangle/polygone [deg]
+        lons : longitude of 2/4 points defining the rectangle/polygone [deg]
+    Returns:
+        float, area on the sphere [m^2]
+    Raises:
+        TypeError   on wrong input arg types
+        ValueError  on wrong number of inputs values
+
+    Examples:
+    >>> import rpnpy.librmn.all as rmn
+    >>> area = rmn.ezcalcarea((45,46),(270,271))
+    >>> print("area = {}".format(int(area)))
+    area = 8666027008
+    >>> area = rmn.ezcalcarea((45,45,46,46),(270,271,270,271))
+    >>> print("area = {}".format(int(area)))
+    area = 8666027008
+
+    See Also:
+        ezcalcdist
+    """
+    if len(lats) != len(lons):
+        raise ValueError("ezcalcarea: should provide same number of lats and lons")
+    area = 0
+    if len(lats) == 2:
+        (clat1, clon1, clat2, clon2) = (_ct.c_float(lats[0]),
+                                        _ct.c_float(lons[0]),
+                                        _ct.c_float(lats[1]),
+                                        _ct.c_float(lons[1]))
+        carea = _ct.c_float(area)
+        _rp.c_ez_calcarea_rect(_ct.byref(carea), clat1, clon1, clat2, clon2)
+    elif len(lats) == 4:
+        clats = _ftnf32(_list2ftnf32(lats))
+        clons = _ftnf32(_list2ftnf32(lons))
+        carea = _ct.c_double(area)
+        _rp.c_ez_calcarea2(_ct.byref(carea), clats, clons)
+    else:
+        raise ValueError("ezcalcarea: should provide 2 or 4 lats,lons pairs")
+    return carea.value
 
 
 if __name__ == "__main__":

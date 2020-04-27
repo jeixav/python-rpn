@@ -29,6 +29,7 @@ See Also:
 import os
 import sys
 import ctypes as _ct
+import glob as _glob
 import numpy  as _np
 import numpy.ctypeslib as _npc
 from rpnpy.librmn import const as _rc
@@ -37,6 +38,8 @@ from rpnpy.librmn import RMNError
 from rpnpy import integer_types as _integer_types
 from rpnpy import C_WCHAR2CHAR as _C_WCHAR2CHAR
 from rpnpy import C_CHAR2WCHAR as _C_CHAR2WCHAR
+from rpnpy import C_WCHAR2CHARL as _C_WCHAR2CHARL
+from rpnpy import C_CHAR2WCHARL as _C_CHAR2WCHARL
 from rpnpy import C_MKSTR as _C_MKSTR
 
 #---- helpers -------------------------------------------------------
@@ -220,6 +223,7 @@ def fstopenall(paths, filemode=_rc.FST_RO, verbose=None):
         paths    : path/name of the file to open
                    if paths is a list, open+link all files
                    if path is a dir, open+link all fst files in dir
+                   A pattern can be used to match existing names
         filemode : a string with the desired filemode (see librmn doc)
                    or one of these constants: FST_RW, FST_RW_OLD, FST_RO
     Returns:
@@ -241,6 +245,10 @@ def fstopenall(paths, filemode=_rc.FST_RO, verbose=None):
     >>> #...
     >>> rmn.fstcloseall(funit1)
     >>> rmn.fstcloseall(funit2)
+    >>> filename = os.path.join(ATM_MODEL_DFILES,'bcmk_toctoc','2009*')
+    >>> funit3 = rmn.fstopenall(filename, rmn.FST_RO)
+    >>> #...
+    >>> rmn.fstcloseall(funit3)
     >>> os.unlink('newfile.fst')  # Remove test file
 
     See Also:
@@ -251,19 +259,27 @@ def fstopenall(paths, filemode=_rc.FST_RO, verbose=None):
        rpnpy.librmn.const
        FSTDError
     """
-    #TODO: accepte pattern, use glob
     paths = [paths] if isinstance(paths, str) else paths
     if not isinstance(paths, (list, tuple)):
         raise TypeError("fstopenall: Expecting arg of type list, Got {0}"\
                         .format(type(paths)))
-    filelist = []
+    paths2 = []
     for mypath in paths:
         if not isinstance(mypath, str):
             raise TypeError("fstopenall: Expecting arg of type str, Got {0}"\
                             .format(type(mypath)))
         if mypath.strip() == '':
             raise ValueError("fstopenall: must provide a valid path")
-        if os.path.isdir(mypath):
+        paths3 = _glob.glob(mypath)
+        if paths3:
+            paths2.extend(paths3)
+        else:
+            paths2.append(mypath)
+    filelist = []
+    for mypath in paths2:
+        if not os.path.isdir(mypath):
+            filelist.append(mypath)
+        else:
             for paths_dirs_files in os.walk(mypath):
                 for myfile in paths_dirs_files[2]:
                     if isFST(os.path.join(mypath, myfile)):
@@ -272,11 +288,9 @@ def fstopenall(paths, filemode=_rc.FST_RO, verbose=None):
                                   .format(os.path.join(mypath, myfile)))
                         filelist.append(os.path.join(mypath, myfile))
                     elif verbose:
-                        print("(fstopenall) Ignoring non FST file: {0}"\
+                        print("(fstopenall) Ignoring non FST file: {0}"
                               .format(os.path.join(mypath, myfile)))
                 break
-        else:
-            filelist.append(mypath)
     if filemode != _rc.FST_RO and len(paths) > 1:
         raise ValueError("fstopenall: Cannot open multiple files at once in write or append mode: {}".format(repr(paths)))
     iunitlist = []
@@ -578,8 +592,10 @@ def fstecr(iunit, data, meta=None, rewrite=True):
                 meta2['dateo'], meta2['deet'], meta2['npas'],
                 meta2['ni'], meta2['nj'], meta2['nk'],
                 meta2['ip1'], meta2['ip2'], meta2['ip3'],
-                _C_WCHAR2CHAR(meta2['typvar']), _C_WCHAR2CHAR(meta2['nomvar']),
-                _C_WCHAR2CHAR(meta2['etiket']), _C_WCHAR2CHAR(meta2['grtyp']),
+                _C_WCHAR2CHARL(meta2['typvar'], _rc.FST_TYPVAR_LEN),
+                _C_WCHAR2CHARL(meta2['nomvar'], _rc.FST_NOMVAR_LEN),
+                _C_WCHAR2CHARL(meta2['etiket'], _rc.FST_ETIKET_LEN),
+                _C_WCHAR2CHARL(meta2['grtyp'], _rc.FST_GRTYP_LEN),
                 meta2['ig1'], meta2['ig2'], meta2['ig3'], meta2['ig4'],
                 datyp, irewrite)
     if istat >= 0:
@@ -700,6 +716,8 @@ def fst_edit_dir(key, datev=-1, dateo=-1, deet=-1, npas=-1, ni=-1, nj=-1, nk=-1,
     if isinstance(key, dict):
         key = key['key']
 
+    #TODO: should accept all args as a dict in the key arg
+
     if isinstance(key, (list, tuple)):
         for key2 in key:
             fst_edit_dir(key2, datev, dateo, deet, npas, ni, nj, nk,
@@ -730,12 +748,14 @@ def fst_edit_dir(key, datev=-1, dateo=-1, deet=-1, npas=-1, ni=-1, nj=-1, nk=-1,
             npas1 = recparams['npas'] if npas == -1 else npas
             try:
                 datev = _rb.incdatr(recparams['dateo'], deet1*npas1/3600.)
-            except:
+            except Exception as e:
                 raise FSTDError('fst_edit_dir: error computing datev to keep_dateo ({0})'.format(repr(e)))
     istat = _rp.c_fst_edit_dir(key, datev, deet, npas, ni, nj, nk,
                  ip1, ip2, ip3,
-                 _C_WCHAR2CHAR(typvar), _C_WCHAR2CHAR(nomvar),
-                 _C_WCHAR2CHAR(etiket), _C_WCHAR2CHAR(grtyp),
+                 _C_WCHAR2CHARL(typvar, _rc.FST_TYPVAR_LEN),
+                 _C_WCHAR2CHARL(nomvar, _rc.FST_NOMVAR_LEN),
+                 _C_WCHAR2CHARL(etiket, _rc.FST_ETIKET_LEN),
+                 _C_WCHAR2CHARL(grtyp, _rc.FST_GRTYP_LEN),
                  ig1, ig2, ig3, ig4, datyp)
     if istat >= 0:
         return
@@ -1006,9 +1026,11 @@ def fstinfx(key, iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
                         .format(type(key)))
     (cni, cnj, cnk) = (_ct.c_int(), _ct.c_int(), _ct.c_int())
     key2 = _rp.c_fstinfx(key, iunit, _ct.byref(cni), _ct.byref(cnj),
-                         _ct.byref(cnk), datev, _C_WCHAR2CHAR(etiket),
+                         _ct.byref(cnk), datev,
+                         _C_WCHAR2CHARL(etiket, _rc.FST_ETIKET_LEN),
                          ip1, ip2, ip3,
-                         _C_WCHAR2CHAR(typvar), _C_WCHAR2CHAR(nomvar))
+                         _C_WCHAR2CHARL(typvar, _rc.FST_TYPVAR_LEN),
+                         _C_WCHAR2CHARL(nomvar, _rc.FST_NOMVAR_LEN))
     ## key2 = _C_TOINT(key2)
     if key2 < 0:
         return None
@@ -1092,8 +1114,11 @@ def fstinl(iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
     (cni, cnj, cnk) = (_ct.c_int(), _ct.c_int(), _ct.c_int())
     cnfound         = _ct.c_int()
     istat = _rp.c_fstinl(iunit, _ct.byref(cni), _ct.byref(cnj), _ct.byref(cnk),
-                         datev, _C_WCHAR2CHAR(etiket), ip1, ip2, ip3,
-                         _C_WCHAR2CHAR(typvar), _C_WCHAR2CHAR(nomvar),
+                         datev,
+                         _C_WCHAR2CHARL(etiket, _rc.FST_ETIKET_LEN),
+                         ip1, ip2, ip3,
+                         _C_WCHAR2CHARL(typvar, _rc.FST_TYPVAR_LEN),
+                         _C_WCHAR2CHARL(nomvar, _rc.FST_NOMVAR_LEN),
                          creclist, cnfound, nrecmax)
     ## if istat < 0:
     ##     raise FSTDError('fstinl: Problem searching record list')
@@ -1263,9 +1288,12 @@ def fstlirx(key, iunit, datev=-1, etiket=' ', ip1=-1, ip2=-1, ip3=-1,
     >>> # then print its min,max,mean values
     >>> key1  = rmn.fstinf(funit, nomvar='P0')
     >>> p0rec = rmn.fstlirx(key1, funit, nomvar='P0')
-    >>> print("# P0 ip2={0} min={1:7.3f} max={2:7.2f} avg={3:8.4f}"\
-              .format(p0rec['ip2'], float(p0rec['d'].min()), float(p0rec['d'].max()), float(p0rec['d'].mean())))
-    # P0 ip2=12 min=530.958 max=1037.96 avg=966.3721
+    >>> print("# P0 ip2={0} min={1:4.0f} max={2:4.0f} avg={3:4.0f}"
+    ...       .format(p0rec['ip2'],
+    ...               round(float(p0rec['d'].min())),
+    ...               round(float(p0rec['d'].max())),
+    ...               round(float(p0rec['d'].mean()))))
+    # P0 ip2=12 min= 531 max=1038 avg= 966
     >>> rmn.fstcloseall(funit)
 
     See Also:
@@ -1327,9 +1355,12 @@ def fstlis(iunit, dtype=None, rank=None, dataArray=None):
     >>> # then print its min,max,mean values
     >>> key1  = rmn.fstinf(funit, nomvar='P0')
     >>> p0rec = rmn.fstlis(funit)
-    >>> print("# P0 ip2={0} min={1:7.3f} max={2:7.2f} avg={3:8.4f}"\
-              .format(p0rec['ip2'], float(p0rec['d'].min()), float(p0rec['d'].max()), float(p0rec['d'].mean())))
-    # P0 ip2=12 min=530.958 max=1037.96 avg=966.3721
+    >>> print("# P0 ip2={0} min={1:4.0f} max={2:4.0f} avg={3:4.0f}"
+    ...       .format(p0rec['ip2'],
+    ...               round(float(p0rec['d'].min())),
+    ...               round(float(p0rec['d'].max())),
+    ...               round(float(p0rec['d'].mean()))))
+    # P0 ip2=12 min= 531 max=1038 avg= 966
     >>>
     >>> rmn.fstcloseall(funit)
 
@@ -1466,9 +1497,12 @@ def fstluk(key, dtype=None, rank=None, dataArray=None):
     >>> # then print its min,max,mean values
     >>> key   = rmn.fstinf(funit, nomvar='P0')
     >>> p0rec = rmn.fstluk(key)
-    >>> print("# P0 ip2={0} min={1:8.4f} max={2:7.2f} avg={3:8.4f}"\
-              .format(p0rec['ip2'], p0rec['d'].min(), p0rec['d'].max(), p0rec['d'].mean()))
-    # P0 ip2=0 min=530.6414 max=1039.64 avg=966.4942
+    >>> print("# P0 ip2={0} min={1:4.0f} max={2:4.0f} avg={3:4.0f}"
+    ...       .format(p0rec['ip2'],
+    ...               round(float(p0rec['d'].min())),
+    ...               round(float(p0rec['d'].max())),
+    ...               round(float(p0rec['d'].mean()))))
+    # P0 ip2=0 min= 531 max=1040 avg= 966
     >>> rmn.fstcloseall(funit)
 
     See Also:
@@ -1505,7 +1539,7 @@ def fstluk(key, dtype=None, rank=None, dataArray=None):
     myshape[0:maxrank] = params['shape'][0:maxrank]
     params['shape'] = myshape
     if dataArray is None:
-        data = _np.empty(params['shape'], dtype=dtype, order='FORTRAN')
+        data = _np.empty(params['shape'], dtype=dtype, order='F')
     elif isinstance(dataArray, _np.ndarray):
         if not dataArray.flags['F_CONTIGUOUS']:
             raise TypeError('Provided dataArray should be F_CONTIGUOUS')
@@ -1549,8 +1583,11 @@ def fstnbr(iunit):
         ValueError on invalid input arg value
         FSTDError  on any other error
 
-    Example:
+    Notes:
+        c_fstnbr on linked files returns only nrec on the first file
+        fstnbr interface add results for all linked files
 
+    Examples:
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES').strip()
@@ -1577,7 +1614,13 @@ def fstnbr(iunit):
                         .format(type(iunit)))
     if iunit < 0:
         raise ValueError("fstnbr: must provide a valid iunit: {0}".format(iunit))
-    nrec = _rp.c_fstnbr(iunit)
+    try:
+        iunitlist = _linkedUnits[str(iunit)]
+    except KeyError:
+        iunitlist = (iunit,)
+    nrec = 0
+    for iunit1 in iunitlist:
+        nrec += _rp.c_fstnbr(iunit1)
     if nrec < 0:
         raise FSTDError()
     return nrec
@@ -1599,8 +1642,11 @@ def fstnbrv(iunit):
         ValueError on invalid input arg value
         FSTDError  on any other error
 
-    Example:
+    Notes:
+        c_fstnbrv on linked files returns only nrec on the first file
+        fstnbrv interface add results for all linked files
 
+    Examples:
     >>> import os, os.path
     >>> import rpnpy.librmn.all as rmn
     >>> ATM_MODEL_DFILES = os.getenv('ATM_MODEL_DFILES').strip()
@@ -1628,7 +1674,16 @@ def fstnbrv(iunit):
                         .format(type(iunit)))
     if iunit < 0:
         raise ValueError("fstnbrv: must provide a valid iunit: {0}".format(iunit))
-    nrec = _rp.c_fstnbrv(iunit)
+    try:
+        iunitlist = _linkedUnits[str(iunit)]
+    except KeyError:
+        iunitlist = (iunit,)
+    nrec = 0
+    for iunit1 in iunitlist:
+        nrec += _rp.c_fstnbrv(iunit1)
+    if nrec < 0:
+        raise FSTDError()
+    return nrec
     if nrec < 0:
         raise FSTDError()
     return nrec
@@ -1645,18 +1700,23 @@ def fstopt(optName, optValue, setOget=_rc.FSTOP_SET):
         optName  : name of option to be set or printed
                    or one of these constants:
                    FSTOP_MSGLVL, FSTOP_TOLRNC, FSTOP_PRINTOPT, FSTOP_TURBOCOMP
+                   FSTOP_FASTIO, FSTOP_IMAGE, FSTOP_REDUCTION32
         optValue : value to be set (int or string)
-            or one of these constants:
-            for optName=FSTOP_MSGLVL: FSTOPI_MSG_DEBUG, FSTOPI_MSG_INFO,
-            FSTOPI_MSG_WARNING, FSTOPI_MSG_ERROR, FSTOPI_MSG_FATAL,
-            FSTOPI_MSG_SYSTEM, FSTOPI_MSG_CATAST
-            for optName=FSTOP_TOLRNC: FSTOPI_TOL_NONE, FSTOPI_TOL_DEBUG,
-            FSTOPI_TOL_INFO, FSTOPI_TOL_WARNING, FSTOPI_TOL_ERROR,
-            FSTOPI_TOL_FATAL
-            for optName=FSTOP_TURBOCOMP: FSTOPS_TURBO_FAST, FSTOPS_TURBO_BEST
-        setOget: define mode, set or print/get
-            one of these constants: FSTOP_SET, FSTOP_GET
-            default: set mode
+                   or one of these constants:
+                   for optName=FSTOP_MSGLVL:
+                      FSTOPI_MSG_DEBUG,   FSTOPI_MSG_INFO,  FSTOPI_MSG_WARNING,
+                      FSTOPI_MSG_ERROR,   FSTOPI_MSG_FATAL, FSTOPI_MSG_SYSTEM,
+                      FSTOPI_MSG_CATAST
+                   for optName=FSTOP_TOLRNC:
+                      FSTOPI_TOL_NONE,    FSTOPI_TOL_DEBUG, FSTOPI_TOL_INFO,
+                      FSTOPI_TOL_WARNING, FSTOPI_TOL_ERROR, FSTOPI_TOL_FATAL
+                   for optName=FSTOP_TURBOCOMP:
+                      FSTOPS_TURBO_FAST, FSTOPS_TURBO_BEST
+                   for optName=FSTOP_FASTIO, FSTOP_IMAGE, FSTOP_REDUCTION32:
+                      FSTOPL_TRUE, FSTOPL_FALSE
+        setOget  : define mode, set or print/get
+                   one of these constants: FSTOP_SET, FSTOP_GET
+                   default: set mode
     Returns:
         None
     Raises:
@@ -1678,6 +1738,9 @@ def fstopt(optName, optValue, setOget=_rc.FSTOP_SET):
                              setOget)
     elif isinstance(optValue, _integer_types):
         istat = _rp.c_fstopi(_C_WCHAR2CHAR(optName), optValue, setOget)
+    elif isinstance(optValue, bool) or \
+        optName in (_rc.FSTOP_FASTIO, _rc.FSTOP_IMAGE, _rc.FSTOP_REDUCTION32):
+        istat = _rp.c_fstopl(_C_WCHAR2CHAR(optName), optValue, setOget)
     else:
         raise TypeError("fstopt: cannot set optValue of type: {0} {1}"\
                         .format(type(optValue), repr(optValue)))

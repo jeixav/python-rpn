@@ -19,7 +19,8 @@ Warning:
     as such with appropriate argument typing and dereferencing.
     It is highly advised in a python program to prefer the use of the
     python wrapper found in
-    * rpnpy.burpc.base
+    * [[Python-RPN/2.1/rpnpy/burpc/base|rpnpy.burpc.base]]
+    * [[Python-RPN/2.1/rpnpy/burpc/brpobj|rpnpy.burpc.brpobj]]
 
 Notes:
     The functions described below are a very close ''port'' from the original
@@ -34,25 +35,6 @@ See Also:
     rpnpy.librmn.burp
     rpnpy.librmn.burp_const
 
-Details:
-    See Source Code
-
-##DETAILS_START
-== Functions C Prototypes ==
-
-<source lang="python">
-
- ## c_vgd_construct():
- ##    Returns a NOT fully initialized VGridDescriptor instance
- ##    Proto:
- ##       vgrid_descriptor* c_vgd_construct();
- ##    Args:
- ##       None
- ##    Returns:
- ##       POINTER(VGridDescriptor) : a pointer to a new VGridDescriptor object
-
-</source>
-##DETAILS_END
 """
 
 import ctypes as _ct
@@ -167,6 +149,8 @@ class BURP_RPT(_ct.Structure):
         ("lngr",   _ct.c_int),
         ("init_hdr", _ct.c_int)  ## for internal use only
         ]
+    
+    _ftypes = None
 
     ## def __str__(self):
     ##    return self.__class__.__name__ + str([x[0] + '=' + str(self.__getattribute__(x[0])) for x in self._fields_])
@@ -183,6 +167,11 @@ class BURP_RPT(_ct.Structure):
         return self.__class__.__name__ + '(' + repr(dict(
                [(x[0], self.__getattribute__(x[0])) for x in self._fields_]
                )) + ')'
+    
+    def getType(self, name):
+        if self._ftypes is None:
+            self._ftypes = dict(self._fields_)
+        return self._ftypes[name]
 
 
 class BURP_BLK(_ct.Structure):
@@ -253,6 +242,8 @@ class BURP_BLK(_ct.Structure):
         ("max_len", _ct.c_int),
         ]
 
+    _ftypes = None
+
     ## def __str__(self):
     ##    return self.__class__.__name__ + str([x[0] + '=' + str(self.__getattribute__(x[0])) for x in self._fields_])
     ##    ## s = self.__class__.__name__ + '('
@@ -269,6 +260,10 @@ class BURP_BLK(_ct.Structure):
                [(x[0], self.__getattribute__(x[0])) for x in self._fields_]
                )) + ')'
 
+    def getType(self, name):
+        if self._ftypes is None:
+            self._ftypes = dict(self._fields_)
+        return self._ftypes[name]
 
 ## /* for internal use only */
 ## extern  void       brp_setstnid( BURP_RPT *rpt, const char *stnid );
